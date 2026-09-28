@@ -64,7 +64,7 @@ export const POST = handler(async (req: Request) => {
 export const GET = handler(async () => {
   const db = await ready();
   const rows = await db<CandidateRow[]>`
-    select id, created_at, file_name, applied_role, personal_details, status, attempts, last_error, headline,
+    select id, created_at, file_name, applied_role, personal_details, status, attempts, last_error, headline, ai_model,
            pm_score, spm_score, decision_override, brief, draft_decision, email_subject, email_body, draft_edited,
            draft_error, email_status, sent_at, sent_to, send_error
     from candidates order by created_at`;

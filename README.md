@@ -54,7 +54,7 @@ npm test                        # unit tests: rubric parsing, PII split, ranking
 | Variable | Required | Notes |
 |---|---|---|
 | `DATABASE_URL` | yes | Postgres connection string. SSL is used automatically for non-local hosts. |
-| `GEMINI_API_KEY` | yes | All AI steps. `GEMINI_MODEL` overrides the model (default `gemini-3.8-flash`). |
+| `GEMINI_API_KEY` | yes | All AI steps. `GEMINI_MODEL` overrides the model (comma-separated list, tried in order; default is a chain of Flash models so one model's free-tier daily quota running out doesn't stop the pipeline). |
 | `RESEND_API_KEY` | to send | Send button is disabled with a notice until set. |
 | `EMAIL_FROM` | no | Default `Kargo Hiring <onboarding@resend.dev>`. `EMAIL_REPLY_TO` optional. |
 | `EMAIL_ALLOWED_DOMAINS` | no | Comma-separated; refuses to send to any other domain (e.g. the MESA test domain). |

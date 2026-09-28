@@ -19,7 +19,7 @@ export default async function RubricPage() {
       <h1>Hiring rubric</h1>
       <p className="muted">
         Derived from the 8 past hire profiles and their outcomes - not from the job descriptions. Loaded from rubric.txt into
-        the <code>rubric_criteria</code> table; every CV is scored against both roles. Model: {config.geminiModel}.
+        the <code>rubric_criteria</code> table; every CV is scored against both roles. Models (in order of preference): {config.geminiModels.join(', ')}.
       </p>
       {ROLES.map((role) => {
         const rows = rubric.criteria.filter((c) => c.role === role);

@@ -17,6 +17,7 @@ type Candidate = {
   status: 'new' | 'scored' | 'error';
   last_error: string | null;
   headline: string | null;
+  ai_model: string | null;
   pm_score: number | null;
   spm_score: number | null;
   decision_override: Decision | null;
@@ -325,7 +326,7 @@ function CandidateCard({
               </tbody>
             </table>
             <div className="small muted" style={{ marginTop: 6 }}>
-              Weighted total: {showOther ? otherScore : appliedScore}/100
+              Weighted total: {showOther ? otherScore : appliedScore}/100{c.ai_model ? ` · scored by ${c.ai_model}` : ''}
             </div>
 
             <h3>Candidate details <span className="small muted">(private - never sent to AI)</span></h3>

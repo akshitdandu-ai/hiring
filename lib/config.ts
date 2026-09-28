@@ -12,12 +12,19 @@ function num(name: string, fallback: number) {
   return Number.isFinite(v) && process.env[name] !== '' && process.env[name] !== undefined ? v : fallback;
 }
 
+const DEFAULT_MODELS =
+  'gemini-3.8-flash,gemini-3.7-flash,gemini-3.6-flash,gemini-3.5-flash,gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-flash-lite-latest';
+
 export const config = {
   /** How many candidates per role can be above the interview line. */
   topN: num('TOP_N_PER_ROLE', 5),
   /** Minimum weighted score (out of 100) to be recommended for interview, even if in the top N. */
   inviteThreshold: num('INVITE_THRESHOLD', 60),
-  geminiModel: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
+  /** Tried in order; each Gemini model has its own free-tier quota, so later ones take over when one runs out. */
+  geminiModels: (process.env.GEMINI_MODEL || DEFAULT_MODELS)
+    .split(',')
+    .map((m) => m.trim())
+    .filter(Boolean),
   geminiApiBase: process.env.GEMINI_API_BASE || 'https://generativelanguage.googleapis.com',
   resendApiBase: process.env.RESEND_API_BASE || 'https://api.resend.com',
   emailFrom: process.env.EMAIL_FROM || 'Kargo Hiring <onboarding@resend.dev>',

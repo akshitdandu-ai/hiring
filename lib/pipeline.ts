@@ -2,8 +2,10 @@
 // so every serverless invocation stays short; rows are claimed so parallel workers never collide.
 import { config, ROLE_LABEL, type Decision, type Role } from './config';
 import { getRubric, ready, type CandidateRow, type Criterion } from './db';
-import { generateJSON } from './gemini';
+import { AIError, generateJSON } from './gemini';
 import { rankCandidates, weightedScore } from './ranking';
+
+const isQuotaExhausted = (e: unknown) => e instanceof AIError && /daily quota/i.test(e.message);
 
 const CLAIM_TIMEOUT = "interval '90 seconds'";
 const MAX_ATTEMPTS = 3;
@@ -80,7 +82,7 @@ CV (personal details removed)
 ${c.cv_text.slice(0, 30_000)}
 """`;
 
-  const result = await generateJSON<ScoreResult>({ system: SYSTEM, prompt, schema: scoreSchema(criteria) });
+  const { data: result, model } = await generateJSON<ScoreResult>({ system: SYSTEM, prompt, schema: scoreSchema(criteria) });
 
   const rows: { criterion_id: string; role: Role; score: number; reason: string }[] = [];
   const totals: Record<Role, number> = { PM: 0, SPM: 0 };
@@ -105,7 +107,7 @@ ${c.cv_text.slice(0, 30_000)}
                values (${c.id}, ${r.criterion_id}, ${r.role}, ${r.score}, ${r.reason})`;
     }
     await tx`update candidates set status = 'scored', headline = ${String(result.headline || '').trim()},
-               pm_score = ${totals.PM}, spm_score = ${totals.SPM}, scored_at = now(), last_error = null,
+               pm_score = ${totals.PM}, spm_score = ${totals.SPM}, scored_at = now(), last_error = null, ai_model = ${model},
                claimed_at = null, updated_at = now()
              where id = ${c.id}`;
   });
@@ -165,6 +167,7 @@ ${emailRules}
 
 ${briefRules}
 
+Format the email body as short paragraphs separated by blank lines (greeting, body paragraphs, sign-off on its own lines).
 Never mention AI, automated screening, rubrics or scores in the email. Do not invent facts that are not in the CV.
 
 CV (personal details removed)
@@ -172,7 +175,7 @@ CV (personal details removed)
 ${c.cv_text.slice(0, 30_000)}
 """`;
 
-  const out = await generateJSON<{ brief: string; subject: string; body: string }>({
+  const { data: out } = await generateJSON<{ brief: string; subject: string; body: string }>({
     system: SYSTEM,
     prompt,
     temperature: 0.4,
@@ -235,7 +238,7 @@ export async function pipelineStatus(): Promise<PipelineStatus> {
 }
 
 /** Does one unit of work (score one CV, or draft one email). Returns what it did. */
-export async function pipelineStep(): Promise<{ did: string | null; error?: string }> {
+export async function pipelineStep(): Promise<{ did: string | null; error?: string; blocked?: boolean }> {
   const db = await ready();
 
   const [job] = await db<CandidateRow[]>`
@@ -251,6 +254,11 @@ export async function pipelineStep(): Promise<{ did: string | null; error?: stri
       return { did: `scored ${job.id}` };
     } catch (e) {
       const msg = (e as Error).message;
+      if (isQuotaExhausted(e)) {
+        // Not this CV's fault: give the attempt back and stop until quota returns.
+        await db`update candidates set attempts = attempts - 1, last_error = ${msg}, claimed_at = null where id = ${job.id}`;
+        return { did: null, error: msg, blocked: true };
+      }
       const failed = job.attempts >= MAX_ATTEMPTS;
       await db`update candidates set last_error = ${msg}, claimed_at = null,
                  status = ${failed ? 'error' : 'new'}, updated_at = now() where id = ${job.id}`;
@@ -273,6 +281,10 @@ export async function pipelineStep(): Promise<{ did: string | null; error?: stri
       return { did: `drafted ${need.decision} ${need.row.id}` };
     } catch (e) {
       const msg = (e as Error).message;
+      if (isQuotaExhausted(e)) {
+        await db`update candidates set draft_attempts = draft_attempts - 1, draft_error = ${msg}, claimed_at = null where id = ${need.row.id}`;
+        return { did: null, error: msg, blocked: true };
+      }
       await db`update candidates set draft_error = ${msg}, claimed_at = null where id = ${need.row.id}`;
       return { did: `draft failed ${need.row.id}`, error: msg };
     }

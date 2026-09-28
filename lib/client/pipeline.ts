@@ -19,6 +19,10 @@ export async function runPipeline(onProgress: (s: PipelineStatus, lastError?: st
         return;
       }
       onProgress(data.status, data.error);
+      if (data.blocked) {
+        stopped = true; // AI quota used up - resume later with "Run now"
+        return;
+      }
       const left = data.status.scoring + data.status.drafts;
       if (left === 0) {
         stopped = true;

@@ -301,7 +301,7 @@ function CandidateCard({ c, role, config, open, toggle, reload }: {
                 <div className="notice ok" style={{ margin: 0 }}>✓ Sent to {c.sent_to} on {new Date(c.sent_at!).toLocaleString()}</div>
               ) : (
                 <button className="primary" disabled={!ready || sending || !config.resendConfigured} onClick={send}>
-                  {sending ? 'Sending…' : c.decision === 'invite' ? 'Send interview invite' : 'Send rejection'}
+                  {sending ? 'Sending…' : c.decision === 'invite' ? 'Confirm & send invite' : 'Confirm & send rejection'}
                 </button>
               )}
             </div>

@@ -29,8 +29,8 @@ A "Stronger fit for SPM/PM" badge appears when a candidate clears the bar on the
 
 You need three keys: a Postgres database (Supabase / Neon / any), a Gemini API key, and (for sending) a Resend API key.
 
-1. **Database** - Supabase: *Project Settings → Database → Connection string → Transaction pooler* (port 6543), with
-   your database password filled in. Neon: the pooled connection string. Nothing to run by hand: on the first request the
+1. **Database** - Supabase: *Connect → Transaction pooler* (port 6543), with your database password filled in. Copy the
+   hostname exactly (`aws-0-…` vs `aws-1-…` differs per project; the wrong one fails with "tenant/user not found"). Neon: the pooled connection string. Nothing to run by hand: on the first request the
    app creates the tables and loads `rubric.txt` into `rubric_criteria` (10 rows: 5 per role).
 2. **Gemini** - create a key at https://aistudio.google.com/apikey.
 3. **Resend** - create a key at https://resend.com (can be left blank until checkpoint B-2). Without a verified domain

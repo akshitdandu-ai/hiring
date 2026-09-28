@@ -2,7 +2,14 @@ import { config } from './config';
 
 type Schema = Record<string, unknown>;
 
-export class AIError extends Error {}
+/** kind: 'busy' = Google overloaded / rate-limited right now (retry later), 'quota' = daily free quota used up, 'fatal' = won't succeed on retry. */
+export class AIError extends Error {
+  kind: 'busy' | 'quota' | 'fatal';
+  constructor(message: string, kind: 'busy' | 'quota' | 'fatal' = 'fatal') {
+    super(message);
+    this.kind = kind;
+  }
+}
 
 // Models whose daily quota ran out, remembered per server instance until the given time.
 const exhausted = new Map<string, number>();
@@ -38,7 +45,7 @@ export async function generateJSON<T>(opts: {
     let shortestWait = Infinity;
     for (const model of config.geminiModels) {
       if ((exhausted.get(model) ?? 0) > Date.now()) continue;
-      if (Date.now() > deadline - 3_000) break;
+      if (Date.now() > deadline - 8_000) break;
       const r = await callOnce(model, key, body, deadline);
       if (r.ok) {
         try {
@@ -53,7 +60,7 @@ export async function generateJSON<T>(opts: {
         if (/PerDay/i.test(r.raw)) exhausted.set(model, Date.now() + 60 * 60_000);
         else shortestWait = Math.min(shortestWait, r.retryMs ?? 10_000);
       } else if (r.status && r.status !== 503 && r.status < 500 && r.status !== 404) {
-        throw new AIError(`${model}: ${r.error}`); // e.g. bad key or bad request - trying other models won't help
+        throw new AIError(`${model}: ${r.error}`, 'fatal'); // e.g. bad key or bad request - trying other models won't help
       }
     }
     // Every model is busy: wait for the soonest per-minute window, if it fits the budget.
@@ -62,11 +69,11 @@ export async function generateJSON<T>(opts: {
     await new Promise((res) => setTimeout(res, wait));
   }
   const allDaily = config.geminiModels.every((m) => (exhausted.get(m) ?? 0) > Date.now());
-  throw new AIError(
-    allDaily
-      ? 'Gemini free-tier daily quota is used up on every configured model. Try again later, or enable billing on the Gemini API key.'
-      : `Gemini unavailable (${errors.slice(-3).join(' | ').slice(0, 400)})`,
-  );
+  if (allDaily) {
+    throw new AIError('Gemini free-tier daily quota is used up on every model. Try again later, or enable billing on the Gemini API key.', 'quota');
+  }
+  // Overloaded (503), rate-limited (429) or slow (timeouts): temporary, so the pipeline retries later.
+  throw new AIError(`Gemini is busy right now (${errors.slice(-2).join(' | ').slice(0, 300)})`, 'busy');
 }
 
 async function callOnce(model: string, key: string, body: string, deadline: number) {
@@ -77,7 +84,7 @@ async function callOnce(model: string, key: string, body: string, deadline: numb
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
       body,
-      signal: AbortSignal.timeout(Math.max(5_000, Math.min(40_000, deadline - Date.now()))),
+      signal: AbortSignal.timeout(Math.max(8_000, Math.min(30_000, deadline - Date.now()))),
     });
   } catch (e) {
     return { ok: false as const, status: 0, error: `network: ${(e as Error).message}`, raw: '' };

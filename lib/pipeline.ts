@@ -5,7 +5,8 @@ import { getRubric, ready, type CandidateRow, type Criterion } from './db';
 import { AIError, generateJSON } from './gemini';
 import { rankCandidates, weightedScore } from './ranking';
 
-const isQuotaExhausted = (e: unknown) => e instanceof AIError && /daily quota/i.test(e.message);
+/** Temporary AI problems (Google busy, quota used up) are not the CV's fault and don't use up a retry. */
+const waitKind = (e: unknown) => (e instanceof AIError && e.kind !== 'fatal' ? e.kind : null);
 
 const CLAIM_TIMEOUT = "interval '90 seconds'";
 const MAX_ATTEMPTS = 3;
@@ -238,7 +239,7 @@ export async function pipelineStatus(): Promise<PipelineStatus> {
 }
 
 /** Does one unit of work (score one CV, or draft one email). Returns what it did. */
-export async function pipelineStep(): Promise<{ did: string | null; error?: string; blocked?: boolean }> {
+export async function pipelineStep(): Promise<{ did: string | null; error?: string; wait?: 'busy' | 'quota' }> {
   const db = await ready();
 
   const [job] = await db<CandidateRow[]>`
@@ -254,10 +255,10 @@ export async function pipelineStep(): Promise<{ did: string | null; error?: stri
       return { did: `scored ${job.id}` };
     } catch (e) {
       const msg = (e as Error).message;
-      if (isQuotaExhausted(e)) {
-        // Not this CV's fault: give the attempt back and stop until quota returns.
-        await db`update candidates set attempts = attempts - 1, last_error = ${msg}, claimed_at = null where id = ${job.id}`;
-        return { did: null, error: msg, blocked: true };
+      const wait = waitKind(e);
+      if (wait) {
+        await db`update candidates set attempts = attempts - 1, last_error = null, claimed_at = null where id = ${job.id}`;
+        return { did: null, error: msg, wait };
       }
       const failed = job.attempts >= MAX_ATTEMPTS;
       await db`update candidates set last_error = ${msg}, claimed_at = null,
@@ -281,9 +282,10 @@ export async function pipelineStep(): Promise<{ did: string | null; error?: stri
       return { did: `drafted ${need.decision} ${need.row.id}` };
     } catch (e) {
       const msg = (e as Error).message;
-      if (isQuotaExhausted(e)) {
-        await db`update candidates set draft_attempts = draft_attempts - 1, draft_error = ${msg}, claimed_at = null where id = ${need.row.id}`;
-        return { did: null, error: msg, blocked: true };
+      const wait = waitKind(e);
+      if (wait) {
+        await db`update candidates set draft_attempts = draft_attempts - 1, draft_error = null, claimed_at = null where id = ${need.row.id}`;
+        return { did: null, error: msg, wait };
       }
       await db`update candidates set draft_error = ${msg}, claimed_at = null where id = ${need.row.id}`;
       return { did: `draft failed ${need.row.id}`, error: msg };

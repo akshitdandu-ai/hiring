@@ -4,14 +4,14 @@ import { handler } from '@/lib/api';
 import { config, type Role } from '@/lib/config';
 import { ready, type CandidateRow } from '@/lib/db';
 import { fileToText, splitPersonalDetails } from '@/lib/extract';
-import { scoreCandidate, pipelineStatus } from '@/lib/pipeline';
+import { pipelineStatus } from '@/lib/pipeline';
 import { rankCandidates } from '@/lib/ranking';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
-/** Upload one CV: extract text, split off personal details, store, then score straight away. */
+/** Upload one CV: extract text, split off personal details and store it. */
 export const POST = handler(async (req: Request) => {
   const form = await req.formData();
   const file = form.get('file');
@@ -35,38 +35,24 @@ export const POST = handler(async (req: Request) => {
   if (existing) {
     return NextResponse.json({ error: 'This CV has already been uploaded', duplicate: true, id: existing.id }, { status: 409 });
   }
-  const [row] = await db<CandidateRow[]>`
-    insert into candidates (file_name, content_hash, applied_role, personal_details, cv_text, claimed_at, attempts)
-    values (${file.name}, ${hash}, ${role}, ${db.json(personal)}, ${redacted}, now(), 1)
+  const [row] = await db<{ id: string }[]>`
+    insert into candidates (file_name, content_hash, applied_role, personal_details, cv_text)
+    values (${file.name}, ${hash}, ${role}, ${db.json(personal)}, ${redacted})
     on conflict (content_hash) do nothing
-    returning *`;
+    returning id`;
   if (!row) return NextResponse.json({ error: 'This CV has already been uploaded', duplicate: true }, { status: 409 });
 
-  // Score inline so the result is visible immediately. If it fails, the pipeline retries it.
-  let scores: Record<Role, number> | null = null;
-  let scoreError: string | null = null;
-  try {
-    scores = await scoreCandidate(row);
-  } catch (e) {
-    scoreError = (e as Error).message;
-    await db`update candidates set last_error = ${scoreError}, claimed_at = null where id = ${row.id}`;
-  }
-  return NextResponse.json({
-    id: row.id,
-    name: personal.name ?? null,
-    hasEmail: Boolean(personal.email),
-    scores,
-    scoreError,
-  });
+  // Scoring, briefs and emails run in the background pipeline (see /api/pipeline), with automatic retries.
+  return NextResponse.json({ id: row.id, name: personal.name ?? null, hasEmail: Boolean(personal.email) });
 });
 
 /** Everything the dashboard needs: candidates with scores, rank and the system's recommendation. */
 export const GET = handler(async () => {
   const db = await ready();
   const rows = await db<CandidateRow[]>`
-    select id, created_at, file_name, applied_role, personal_details, status, attempts, last_error, headline, ai_model,
-           pm_score, spm_score, decision_override, brief, draft_decision, email_subject, email_body, draft_edited,
-           draft_error, email_status, sent_at, sent_to, send_error
+    select id, created_at, file_name, applied_role, personal_details, status, last_error, headline,
+           pm_score, spm_score, brief, draft_decision, email_subject, email_body,
+           email_status, sent_at, sent_to, send_error
     from candidates order by created_at`;
   const scores = await db`
     select s.candidate_id, s.criterion_id, s.role, s.score, s.reason, r.name, r.weight, r.position
@@ -79,7 +65,7 @@ export const GET = handler(async () => {
     byCandidate.set(s.candidate_id, list);
   }
   return NextResponse.json({
-    config: { topN: config.topN, inviteThreshold: config.inviteThreshold, testRecipient: config.testRecipient || null, resendConfigured: Boolean(process.env.RESEND_API_KEY), aiConfigured: Boolean(process.env.GEMINI_API_KEY) },
+    config: { topN: config.topN, inviteThreshold: config.inviteThreshold, resendConfigured: Boolean(process.env.RESEND_API_KEY) },
     status: await pipelineStatus(),
     candidates: rows.map((r) => ({ ...r, ...ranks.get(r.id), scores: byCandidate.get(r.id) ?? [] })),
   });

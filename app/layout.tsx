@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import Nav from './Nav';
 import './globals.css';
 
 export const metadata: Metadata = { title: 'Kargo Hiring', description: 'CV scoring and candidate outreach for Kargo' };
@@ -9,12 +9,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <header className="top">
-          <strong>Kargo Hiring</strong>
-          <nav>
-            <Link href="/">Upload</Link>
-            <Link href="/dashboard">Dashboard</Link>
-            <Link href="/rubric">Rubric</Link>
-          </nav>
+          <div className="top-inner">
+            <div className="brand"><span className="logo">K</span> Kargo Hiring</div>
+            <Nav />
+          </div>
         </header>
         <main>{children}</main>
       </body>

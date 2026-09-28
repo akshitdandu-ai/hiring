@@ -18,12 +18,8 @@ brief, draft email, one-click send (Resend)        Top 5 with score ≥ 60 → 3
 
 | Page         | What it does |
 |--------------|--------------|
-| `/`          | Pick the role applied for, drop in CVs (many at once). Each one is parsed, redacted, stored and scored; then briefs and drafts are written automatically. |
-| `/dashboard` | PM / SPM tabs. Candidates ranked by score, split into *Interview* and *Below the line*. Open a card for the brief, per-criterion scores and reasons (for both rubrics), private contact details and the editable draft. Buttons: **Send**, *Reject/Interview instead* (override - draft is rewritten), *Rewrite draft*, *Move to other role*, *Rescore*, *Delete*, and **Send all rejection drafts** per role. |
-| `/rubric`    | The rubric exactly as stored in the `rubric_criteria` table. |
-| `/api/health`| Public status check (no candidate data): database reachable, rubric rows per role, AI / email configured. |
-
-A "Stronger fit for SPM/PM" badge appears when a candidate clears the bar on the rubric for the role they did *not* apply for.
+| `/`          | Pick the role applied for, drop in CVs (many at once). Each one is parsed, redacted and stored; scoring, briefs and draft emails then run automatically. |
+| `/dashboard` | PM / SPM tabs. Candidates ranked by score, split into *Recommended for interview* and *Not moving forward*. Open a card for the interview brief, per-criterion scores and reasons (both rubrics), and the draft email with one **Send** button. |
 
 ## Setup
 
@@ -81,7 +77,7 @@ npm test                        # unit tests: rubric parsing, PII split, ranking
   specific rejection. Drafts use a `[NAME]` placeholder that is swapped for the real first name only when displayed or
   sent. When new uploads shift the line, affected drafts are rewritten automatically (never ones already sent).
 - **Pipeline.** Work runs one unit per request (`POST /api/pipeline`) with row claiming, so each serverless call stays
-  short, parallel workers never double-process, and Gemini rate limits (429s) are retried with backoff. The upload page
+  short, parallel workers never double-process, and Gemini rate limits and "high demand" errors are retried automatically without using up a CV's retries. The upload page
   and dashboard drive it until nothing is left; if you close the tab, the dashboard resumes it on next load.
 - **Sending.** `POST /api/candidates/:id/send` atomically claims the send (no double sends), calls Resend with an
   idempotency key, and records `email_status = 'sent'`, `sent_at`, `sent_to` and the Resend id.
@@ -91,7 +87,7 @@ npm test                        # unit tests: rubric parsing, PII split, ranking
 - `rubric_criteria` - id, role (PM/SPM), position, name, weight, anchor_5 / anchor_3 / anchor_1, source.
 - `rubric_guidance` - "how to score", hire patterns and "do not reward" text from `rubric.txt`.
 - `candidates` - applied role, `personal_details` (jsonb, private), `cv_text` (redacted), scores, headline, brief,
-  draft (subject/body/decision), founder override, send status.
+  draft (subject/body/decision), send status.
 - `scores` - candidate × criterion: score 1-5 + reason.
 
 RLS is enabled on all tables with no policies, so nothing is readable through Supabase's public anon API; the app

@@ -21,6 +21,7 @@ brief, draft email, one-click send (Resend)        Top 5 with score ≥ 60 → 3
 | `/`          | Pick the role applied for, drop in CVs (many at once). Each one is parsed, redacted, stored and scored; then briefs and drafts are written automatically. |
 | `/dashboard` | PM / SPM tabs. Candidates ranked by score, split into *Interview* and *Below the line*. Open a card for the brief, per-criterion scores and reasons (for both rubrics), private contact details and the editable draft. Buttons: **Send**, *Reject/Interview instead* (override - draft is rewritten), *Rewrite draft*, *Move to other role*, *Rescore*, *Delete*, and **Send all rejection drafts** per role. |
 | `/rubric`    | The rubric exactly as stored in the `rubric_criteria` table. |
+| `/api/health`| Public status check (no candidate data): database reachable, rubric rows per role, AI / email configured. |
 
 A "Stronger fit for SPM/PM" badge appears when a candidate clears the bar on the rubric for the role they did *not* apply for.
 

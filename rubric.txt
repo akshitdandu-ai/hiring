@@ -1,0 +1,184 @@
+KARGO HIRING RUBRIC - PRODUCT MANAGER (PM) AND SENIOR PRODUCT MANAGER (SPM)
+Source: 8 past hire profiles + hire outcomes table. Not derived from the job descriptions.
+
+==================================================================
+HOW TO SCORE
+==================================================================
+Score each criterion 1-5 using the anchors given (5 = strong, 3 = partial, 1 = absent).
+Weighted score = sum of (score / 5 x weight). Maximum = 100.
+Score only what is written in the CV. Do not infer from job titles, company names,
+college, certifications or years of experience.
+
+==================================================================
+PATTERNS FOUND IN THE HIRE PROFILES
+==================================================================
+Exceeds: Rohan, Sunita, Aditya, Meghna, Lavanya
+Meets:   Vikram, Rahul
+Below:   Preetham
+
+PATTERN 1 - Worked inside logistics operations before their current role.
+  All 5 Exceeds hires did hands-on freight / logistics operations work:
+  Rohan (operations executive at a CHA firm, JNPT), Sunita (documentation at
+  freight forwarders), Aditya (port services sales, worked alongside terminal
+  operations), Meghna (documentation at a freight forwarder), Lavanya (carrier
+  operations at a 3PL). None of the other 3 did. Preetham touched logistics
+  only through APIs (3PL integrations) - from the software side, never the
+  operations side. Vikram (HR tech) and Rahul (fintech / HR tech) have none.
+
+PATTERN 2 - Saw a broken workflow nobody owned, built the fix unprompted,
+  and the people doing the work adopted it.
+  Rohan: Excel tracking system adopted by 12-person ops team in 2 weeks;
+    weekend prototype of BL verification used by 30 colleagues in a month.
+  Sunita: rebuilt the documentation intake workflow over a weekend when a
+    vendor changed format; team kept it permanently.
+  Lavanya: shipment visibility dashboard adopted by 2 other regional teams;
+    same-day exception triage that "hadn't existed before".
+  Meghna: onboarding checklist became the whole team's standard.
+  Aditya: loss post-mortem became standard practice before qualification.
+  Contrast: Vikram and Rahul built templates and programmes for their own
+  function (PRD template, case study programme), not fixes for frontline users.
+
+PATTERN 3 - Owns problems to closure, including their own failures.
+  Lavanya killed 2 of her own features on usage data and wrote the outage
+  post-mortem; Aditya documented why he lost a 4-month deal; Meghna worked a
+  customs hold through the night; Sunita and Rohan fixed breakages under time
+  pressure. Vikram's and Rahul's CVs contain only wins, frameworks and
+  credentials - no failures, kills or crises owned.
+
+==================================================================
+PRODUCT MANAGER (PM)
+==================================================================
+
+Criterion name: Logistics operations from the inside
+What a strong candidate looks like:
+  5 - Has held a role doing operational logistics work: documentation, customs,
+      carrier coordination, shipment exceptions, dispatch, warehouse or port
+      operations. The CV names specific operational artefacts or processes
+      (Bills of Lading, DO release, carrier allocation, exception handling).
+  3 - Worked closely alongside logistics operations teams (e.g. rollouts,
+      onboarding operators) without doing the operational job themselves.
+  1 - Logistics exposure only through software (APIs, integrations, dashboards
+      built for someone else), or none.
+Weight: 30%
+Source: Rohan, Sunita, Aditya, Meghna, Lavanya (all Exceeds). Contrast: Preetham
+(3PL integrations via API only, Below).
+
+Criterion name: Direct line to the frontline
+What a strong candidate looks like:
+  5 - Personally and regularly works with the people who do the operational work
+      (operators, clients' ops teams, carriers) with no account manager, product
+      or support layer in between. The CV gives a specific example of something
+      learned directly from them that changed what got built or done.
+  3 - Structured user research (interviews, surveys) with a named user group,
+      but occasional rather than ongoing.
+  1 - User understanding comes through other teams, tickets or analytics only.
+Weight: 15%
+Source: Aditya ("no account manager layer"), Rohan (field requirements "without a
+product layer"), Lavanya (discovery session that cut an account's tickets 60%).
+Contrast: Preetham (one of 12 engineers, no user contact).
+
+Criterion name: Built the fix, got it adopted
+What a strong candidate looks like:
+  5 - Noticed a broken or manual workflow no one owned, built a fix without being
+      asked (spreadsheet, tool, process, prototype), and it was adopted by the
+      people doing the work - with the adoption stated (who, how many, how fast).
+  3 - Built something useful on their own initiative, but for their own function
+      only, or with no evidence it was adopted beyond themselves.
+  1 - Only delivered assigned roadmap work.
+Weight: 25%
+Source: Rohan, Sunita, Lavanya, Meghna. Contrast: Vikram (PRD template for his PM
+team), Rahul (marketing case studies) - initiative, but not a frontline fix.
+
+Criterion name: Owns it to closure, including failures
+What a strong candidate looks like:
+  5 - The CV describes at least one thing that went wrong or did not work and what
+      the person did about it: a killed feature, a lost deal, an outage, a crisis
+      handled under time pressure, a post-mortem written and followed through.
+  3 - Describes handling incidents or fixes, but as part of a team or routine duty.
+  1 - Only wins, responsibilities and credentials; nothing that went wrong.
+Weight: 20%
+Source: Lavanya (killed 2 features, outage post-mortem), Aditya (lost-deal
+post-mortem), Meghna (overnight customs hold). Contrast: Vikram and Rahul (wins only).
+
+Criterion name: Makes calls without cover
+What a strong candidate looks like:
+  5 - Was the sole owner of an area and made decisions others acted on without
+      escalating (sole PM, ran a full cycle alone, no manager in the function).
+  3 - Owned features or projects end to end inside a larger team with a manager
+      setting direction.
+  1 - Supporting or contributor role only.
+Weight: 10%
+Source: Lavanya (sole PM; "she doesn't hedge"), Aditya (runs full enterprise cycle
+independently), Sunita (independent consultant). Contrast: Preetham (one of 12 in a
+3,200-person company).
+
+PM TOTAL: 30 + 15 + 25 + 20 + 10 = 100%
+
+==================================================================
+SENIOR PRODUCT MANAGER (SPM)
+==================================================================
+
+Criterion name: Logistics operations from the inside
+What a strong candidate looks like:
+  5 - Everything in the PM 5, plus later used that operational knowledge to shape
+      a product or system that operators actually use (moved from doing the work
+      to building for it).
+  3 - Operational logistics experience, but no evidence of turning it into a
+      product or system.
+  1 - Logistics exposure only through software, or none.
+Weight: 25%
+Source: Rohan (CHA ops -> BL verification module), Lavanya (3PL ops -> dock
+scheduling product). Contrast: Preetham.
+
+Criterion name: Direct line to the frontline
+What a strong candidate looks like:
+  5 - Works directly with operators AND has built a repeatable way for their team
+      to stay close to them (ongoing discovery tracks, ops working sessions).
+  3 - Personal, direct frontline contact only.
+  1 - User understanding through other teams, tickets or analytics only.
+Weight: 10%
+Source: Lavanya (3 parallel discovery tracks with freight forwarders), Rohan.
+
+Criterion name: Built the fix, got it adopted
+What a strong candidate looks like:
+  5 - Built a fix for a broken workflow on their own initiative that spread beyond
+      their own team (other teams, branches or customers adopted it).
+  3 - Fix adopted within their own team only.
+  1 - Only delivered assigned roadmap work.
+Weight: 20%
+Source: Lavanya (dashboard adopted by 2 other regional teams), Rohan (30 colleagues
+in the first month), Meghna (whole CS team).
+
+Criterion name: Owns it to closure, including failures
+What a strong candidate looks like:
+  5 - Owned a significant failure at team or customer level (outage, lost account,
+      killed initiative) and changed how the team works as a result - the change
+      is stated.
+  3 - Owned a failure personally, no lasting change described.
+  1 - Only wins.
+Weight: 20%
+Source: Aditya (loss post-mortem became standard practice), Lavanya (outage
+post-mortem, owned action items to closure).
+
+Criterion name: Makes calls without cover
+What a strong candidate looks like:
+  5 - Has been the most senior person in their function (no one above them in
+      product or equivalent), set direction and priorities, and others trusted and
+      acted on their calls. Kargo's SPM reports straight to the founder with no
+      Head of Product.
+  3 - Sole owner of an area, but with a senior product leader above them.
+  1 - Always worked with a manager setting direction.
+Weight: 25%
+Source: Rohan ("comfortable as the most senior engineer in the room"), Sunita
+(independent consultant, "limited oversight"), Lavanya ("calls we trusted
+immediately"). Contrast: Preetham, Vikram (4-person PM team reporting to CTO).
+
+SPM TOTAL: 25 + 10 + 20 + 20 + 25 = 100%
+
+==================================================================
+DO NOT REWARD (present in Meets / Below profiles, absent as a differentiator)
+==================================================================
+- Certifications, MBAs, conference talks, framework names (JTBD, OKRs, Reforge)
+- Scale of employer or user base on its own
+- Polished outcome metrics with no operational context
+Vikram's CV is the closest match to a standard PM spec and was rated Meets.

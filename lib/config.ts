@@ -17,7 +17,7 @@ export const config = {
   topN: num('TOP_N_PER_ROLE', 5),
   /** Minimum weighted score (out of 100) to be recommended for interview, even if in the top N. */
   inviteThreshold: num('INVITE_THRESHOLD', 60),
-  geminiModel: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+  geminiModel: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
   geminiApiBase: process.env.GEMINI_API_BASE || 'https://generativelanguage.googleapis.com',
   resendApiBase: process.env.RESEND_API_BASE || 'https://api.resend.com',
   emailFrom: process.env.EMAIL_FROM || 'Kargo Hiring <onboarding@resend.dev>',

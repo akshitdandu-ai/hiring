@@ -124,3 +124,40 @@ tr:last-child td { border-bottom: none; }
   .cand-body { grid-template-columns: 1fr; }
   .cand-body > div + div { border-left: none; border-top: 1px solid var(--line); }
 }
+
+/* Gooey gradient hero (see app/GooeyGradientBackground.tsx). Kargo palette: deep navy base, blue / indigo / cyan blobs. */
+.goo {
+  --goo-bg1: #1e1b4b; --goo-bg2: #0b1a45;
+  --goo-c1: 35, 70, 216; --goo-c2: 124, 92, 255; --goo-c3: 56, 189, 248;
+  --goo-c4: 99, 102, 241; --goo-c5: 20, 184, 166; --goo-follow: 110, 140, 255;
+  --goo-size: 80%; --goo-blend: hard-light;
+  position: relative; overflow: hidden; isolation: isolate;
+}
+.goo-bg { position: absolute; inset: 0; z-index: 0; background: linear-gradient(40deg, var(--goo-bg1), var(--goo-bg2)); }
+.goo-bg svg { position: absolute; width: 0; height: 0; }
+.goo-blobs { width: 100%; height: 100%; }
+.goo-b {
+  position: absolute; mix-blend-mode: var(--goo-blend);
+  width: var(--goo-size); height: var(--goo-size);
+  top: calc(50% - var(--goo-size) / 2); left: calc(50% - var(--goo-size) / 2);
+  will-change: transform;
+}
+.goo .g1 { background: radial-gradient(circle at center, rgba(var(--goo-c1), .8) 0, rgba(var(--goo-c1), 0) 50%) no-repeat; transform-origin: center; animation: gooVertical 30s ease infinite; }
+.goo .g2 { background: radial-gradient(circle at center, rgba(var(--goo-c2), .8) 0, rgba(var(--goo-c2), 0) 50%) no-repeat; transform-origin: calc(50% - 400px); animation: gooCircle 20s reverse infinite; }
+.goo .g3 { background: radial-gradient(circle at center, rgba(var(--goo-c3), .8) 0, rgba(var(--goo-c3), 0) 50%) no-repeat; top: calc(50% - var(--goo-size) / 2 + 40%); left: calc(50% - var(--goo-size) / 2 - 30%); transform-origin: calc(50% + 400px); animation: gooCircle 40s linear infinite; }
+.goo .g4 { background: radial-gradient(circle at center, rgba(var(--goo-c4), .8) 0, rgba(var(--goo-c4), 0) 50%) no-repeat; transform-origin: calc(50% - 200px); animation: gooHorizontal 40s ease infinite; opacity: .7; }
+.goo .g5 { background: radial-gradient(circle at center, rgba(var(--goo-c5), .8) 0, rgba(var(--goo-c5), 0) 50%) no-repeat; width: calc(var(--goo-size) * 2); height: calc(var(--goo-size) * 2); top: calc(50% - var(--goo-size)); left: calc(50% - var(--goo-size)); transform-origin: calc(50% - 800px) calc(50% + 200px); animation: gooCircle 20s ease infinite; opacity: .6; }
+.goo .goo-follow { background: radial-gradient(circle at center, rgba(var(--goo-follow), .8) 0, rgba(var(--goo-follow), 0) 50%) no-repeat; width: 100%; height: 200%; top: -100%; left: -50%; opacity: .7; }
+.goo-content { position: relative; z-index: 1; }
+@keyframes gooCircle { 0% { transform: rotate(0deg); } 50% { transform: rotate(180deg); } 100% { transform: rotate(360deg); } }
+@keyframes gooVertical { 0% { transform: translateY(-50%); } 50% { transform: translateY(50%); } 100% { transform: translateY(-50%); } }
+@keyframes gooHorizontal { 0% { transform: translateX(-50%) translateY(-10%); } 50% { transform: translateX(50%) translateY(10%); } 100% { transform: translateX(-50%) translateY(-10%); } }
+@media (prefers-reduced-motion: reduce) { .goo-b { animation: none !important; } }
+
+.hero { border-radius: 14px; margin-bottom: 20px; box-shadow: 0 8px 24px rgba(15, 23, 42, .18); }
+.hero-inner { padding: 30px 30px 32px; min-height: 150px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; color: #fff; }
+.hero h1 { font-size: 28px; color: #fff; margin-bottom: 6px; text-shadow: 0 1px 12px rgba(0, 0, 0, .25); }
+.hero-sub { color: rgba(255, 255, 255, .82); max-width: 680px; }
+.hero .btn { background: rgba(255, 255, 255, .12); border-color: rgba(255, 255, 255, .28); color: #fff; backdrop-filter: blur(8px); }
+.hero .btn:hover { background: rgba(255, 255, 255, .22); border-color: rgba(255, 255, 255, .4); }
+@media (max-width: 860px) { .hero-inner { padding: 22px 20px 24px; min-height: 120px; } .hero h1 { font-size: 23px; } }

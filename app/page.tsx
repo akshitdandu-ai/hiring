@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRef, useState } from 'react';
 import { runPipeline, type PipelineProgress } from '@/lib/client/pipeline';
+import PageHero from './PageHero';
 
 type Role = 'PM' | 'SPM';
 type Item = {
@@ -83,11 +84,10 @@ export default function UploadPage() {
 
   return (
     <>
-      <h1>Upload CVs</h1>
-      <p className="sub">
+      <PageHero title="Upload CVs">
         Each CV is scored against both the PM and SPM rubrics. Names, emails and phone numbers are separated on upload and
         never sent to the AI.
-      </p>
+      </PageHero>
 
       <div className="card">
         <div className="step"><span className="n">1</span> Role applied for</div>

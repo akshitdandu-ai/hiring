@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { runPipeline, type PipelineProgress } from '@/lib/client/pipeline';
 import { personalise } from '@/lib/ranking';
+import PageHero from '../PageHero';
 
 type Role = 'PM' | 'SPM';
 type Decision = 'invite' | 'reject';
@@ -112,16 +113,10 @@ export default function Dashboard() {
 
   return (
     <>
-      <div className="spread" style={{ marginBottom: 18 }}>
-        <div>
-          <h1>Candidates</h1>
-          <div className="muted">
-            Ranked by rubric score. Top {config.topN} per role scoring {config.inviteThreshold}+ are recommended for interview.
-            Nothing is sent until you click send.
-          </div>
-        </div>
-        <Link className="btn" href="/">+ Upload CVs</Link>
-      </div>
+      <PageHero title="Candidates" action={<Link className="btn" href="/">+ Upload CVs</Link>}>
+        Ranked by rubric score. Top {config.topN} per role scoring {config.inviteThreshold}+ are recommended for interview.
+        Nothing is sent until you click confirm.
+      </PageHero>
 
       {!config.resendConfigured && <div className="notice warn">Email sending is not set up yet (RESEND_API_KEY is missing).</div>}
       {left > 0 && (

@@ -159,17 +159,20 @@ tr:last-child td { border-bottom: none; }
 .app-bg .goo-bg { transform: translateZ(0); }
 main > .muted { color: rgba(255, 255, 255, .8); }
 .card, .stat, .cand { box-shadow: 0 10px 30px rgba(5, 10, 40, .22); }
+/* Frosted-glass header: the animated background shows through, blurred; the solid white cards below stay the workspace. */
 .hero {
-  position: relative; overflow: hidden; margin: 6px 0 18px;
-  background: #fff; border-radius: 16px; border: 1px solid rgba(255, 255, 255, .6);
-  box-shadow: 0 18px 40px rgba(5, 10, 40, .28);
+  position: relative; overflow: hidden; margin: 6px 0 26px; border-radius: 18px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, .06));
+  backdrop-filter: blur(22px) saturate(160%); -webkit-backdrop-filter: blur(22px) saturate(160%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .22), inset 0 1px 0 rgba(255, 255, 255, .35), 0 20px 50px rgba(5, 10, 40, .30);
 }
-/* Gradient accent strip + soft wash so the header box reads differently from the white form cards below. */
-.hero::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: linear-gradient(180deg, #38bdf8, #2346d8 55%, #7c5cff); }
-.hero::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 140% at 100% 0%, rgba(124, 92, 255, .10), transparent 55%); }
-.hero-inner { position: relative; z-index: 1; padding: 26px 30px 26px 36px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
-.hero h1 { font-size: 30px; margin-bottom: 6px; background: linear-gradient(90deg, #0f172a, #2346d8); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.hero-sub { color: var(--muted); max-width: 680px; font-size: 14.5px; }
-.hero .btn { background: var(--accent); border-color: var(--accent); color: #fff; }
-.hero .btn:hover { filter: brightness(1.08); background: var(--accent); }
-@media (max-width: 860px) { .hero-inner { padding: 20px 20px 20px 26px; } .hero h1 { font-size: 25px; } }
+/* Soft light catching the top edge of the glass. */
+.hero::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 55%; pointer-events: none; background: linear-gradient(180deg, rgba(255, 255, 255, .12), transparent); }
+.hero-inner { position: relative; z-index: 1; padding: 30px 34px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.hero h1 { font-size: 34px; font-weight: 800; letter-spacing: -.025em; color: #fff; margin-bottom: 8px; text-shadow: 0 2px 18px rgba(5, 10, 40, .35); }
+.hero-sub { color: rgba(255, 255, 255, .86); max-width: 680px; font-size: 15px; text-shadow: 0 1px 8px rgba(5, 10, 40, .25); }
+.hero .btn { background: rgba(255, 255, 255, .95); border-color: transparent; color: var(--accent); box-shadow: 0 6px 18px rgba(5, 10, 40, .25); }
+.hero .btn:hover { background: #fff; filter: none; }
+/* Fallback where backdrop blur isn't supported: a darker tint keeps the white text readable. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .hero { background: rgba(15, 23, 60, .55); } }
+@media (max-width: 860px) { .hero-inner { padding: 22px 22px; } .hero h1 { font-size: 27px; } }

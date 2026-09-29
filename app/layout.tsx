@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import GooeyGradientBackground from './GooeyGradientBackground';
 import Nav from './Nav';
 import './globals.css';
 
@@ -8,6 +9,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
+        <GooeyGradientBackground className="app-bg" />
         <header className="top">
           <div className="top-inner">
             <div className="brand"><span className="logo">K</span> Kargo Hiring</div>

@@ -1,9 +1,7 @@
-import GooeyGradientBackground from './GooeyGradientBackground';
-
-/** Page title band with the gooey gradient behind it. */
+/** Page title band. Sits directly on the full-page gooey background (see layout.tsx). */
 export default function PageHero({ title, children, action }: { title: string; children?: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <GooeyGradientBackground className="hero">
+    <div className="hero">
       <div className="hero-inner">
         <div>
           <h1>{title}</h1>
@@ -11,6 +9,6 @@ export default function PageHero({ title, children, action }: { title: string; c
         </div>
         {action}
       </div>
-    </GooeyGradientBackground>
+    </div>
   );
 }

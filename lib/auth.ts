@@ -1,6 +1,5 @@
 import { cookies } from 'next/headers'
 import crypto from 'crypto'
-import { env } from './env'
 
 const COOKIE_NAME = 'admin-session'
 
@@ -9,32 +8,29 @@ function generateToken(): string {
 }
 
 function signToken(token: string): string {
-  return crypto.createHmac('sha256', env.SESSION_SECRET).update(token).digest('hex')
+  const secret = process.env.SESSION_SECRET || ''
+  return crypto.createHmac('sha256', secret).update(token).digest('hex')
 }
 
 export async function createSession(password: string): Promise<string | null> {
+  const adminPassword = (process.env.ADMIN_PASSWORD || '').trim()
   const trimmedPassword = password.trim()
-  const trimmedEnvPassword = env.ADMIN_PASSWORD.trim()
 
-  try {
-    if (crypto.timingSafeEqual(Buffer.from(trimmedPassword), Buffer.from(trimmedEnvPassword))) {
-      const token = generateToken()
-      const signature = signToken(token)
-      const sessionValue = `${token}.${signature}`
+  // Simple comparison first
+  if (trimmedPassword === adminPassword) {
+    const token = generateToken()
+    const signature = signToken(token)
+    const sessionValue = `${token}.${signature}`
 
-      const cookieStore = await cookies()
-      cookieStore.set(COOKIE_NAME, sessionValue, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24, // 24 hours
-      })
+    const cookieStore = await cookies()
+    cookieStore.set(COOKIE_NAME, sessionValue, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24, // 24 hours
+    })
 
-      return sessionValue
-    }
-  } catch (error) {
-    // timingSafeEqual throws if buffers are different lengths
-    return null
+    return sessionValue
   }
 
   return null

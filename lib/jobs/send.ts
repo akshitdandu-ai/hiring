@@ -27,7 +27,7 @@ export async function runSend(): Promise<{ ok: boolean; message: string; sent?: 
       return { ok: false, message: `Issue status is ${issue.status}, refusing to send` }
     }
 
-    // Transition to sending if not already
+    // Transition to sending if not already (idempotent with conditional update)
     if (issue.status === 'confirmed') {
       const { error } = await supabase
         .from('issues')
@@ -35,11 +35,9 @@ export async function runSend(): Promise<{ ok: boolean; message: string; sent?: 
         .eq('id', issue.id)
         .eq('status', 'confirmed')
 
-      if (error || !error) {
-        // Idempotent: only one call succeeds
-        if (error && !error.message.includes('0 rows')) {
-          throw error
-        }
+      // Ignore "no rows updated" errors (from race condition)
+      if (error && !error.message.includes('0 rows')) {
+        throw error
       }
     }
 

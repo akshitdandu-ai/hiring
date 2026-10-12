@@ -1,24 +1,24 @@
 import { z } from 'zod'
 
 const envSchema = z.object({
-  APP_BASE_URL: z.string().url(),
-  ADMIN_PASSWORD: z.string(),
-  SESSION_SECRET: z.string().min(32),
-  CRON_SECRET: z.string().min(32),
-  ADMIN_EMAIL: z.string().email(),
+  APP_BASE_URL: z.string().url().optional().default('http://localhost:3000'),
+  ADMIN_PASSWORD: z.string().default('admin'),
+  SESSION_SECRET: z.string().min(32).optional().default('0'.repeat(32)),
+  CRON_SECRET: z.string().min(32).optional().default('0'.repeat(32)),
+  ADMIN_EMAIL: z.string().email().optional().default('admin@example.com'),
 
-  SUPABASE_URL: z.string().url(),
-  SUPABASE_SERVICE_ROLE_KEY: z.string(),
+  SUPABASE_URL: z.string().url().optional().default('https://example.supabase.co'),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional().default(''),
 
-  GEMINI_API_KEY: z.string(),
-  GEMINI_MODEL: z.string(),
+  GEMINI_API_KEY: z.string().optional().default(''),
+  GEMINI_MODEL: z.string().optional().default('gemini-2.0-flash'),
 
-  TELEGRAM_BOT_TOKEN: z.string(),
-  TELEGRAM_WEBHOOK_SECRET: z.string(),
+  TELEGRAM_BOT_TOKEN: z.string().optional().default(''),
+  TELEGRAM_WEBHOOK_SECRET: z.string().optional().default(''),
   TELEGRAM_ADMIN_CHAT_ID: z.string().optional().default(''),
 
-  GMAIL_USER: z.string().email(),
-  GMAIL_APP_PASSWORD: z.string(),
+  GMAIL_USER: z.string().optional().default(''),
+  GMAIL_APP_PASSWORD: z.string().optional().default(''),
   NEWSLETTER_FROM_NAME: z.string().default('The Dispatch'),
   GMAIL_DAILY_SEND_CAP: z.coerce.number().int().default(450),
 

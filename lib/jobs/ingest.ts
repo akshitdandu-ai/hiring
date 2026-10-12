@@ -123,8 +123,16 @@ export async function runIngest(): Promise<IngestResult> {
 
     console.log(`✓ Fetched ${result.fetched} articles\n`)
 
-    // Get excluded articles from last 4 sent issues
-    const excludedIds = await getExcludedArticles()
+    // Get excluded articles from last 4 sent issues (with their URL hashes)
+    const excludedArticleIds = await getExcludedArticles()
+
+    // Fetch excluded articles' details to match by URL and title
+    const { data: excludedArticles } = excludedArticleIds.length > 0
+      ? await supabase
+          .from('articles')
+          .select('id, url_hash, title')
+          .in('id', excludedArticleIds)
+      : { data: [] }
 
     // Get similar articles from last 7 days
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
@@ -165,11 +173,16 @@ export async function runIngest(): Promise<IngestResult> {
         continue
       }
 
-      // Check if excluded
+      // Check if excluded (by URL hash or title similarity to excluded articles)
       let isExcluded = false
-      if (excludedIds.some((id: any) => id)) {
-        isExcluded = true
-        result.excluded++
+      if (excludedArticles && excludedArticles.length > 0) {
+        for (const excluded of excludedArticles) {
+          if (excluded.url_hash === urlHash || titleSimilarity(item.title, excluded.title) >= 0.8) {
+            isExcluded = true
+            result.excluded++
+            break
+          }
+        }
       }
 
       // Infer topic (cheap keyword classifier)

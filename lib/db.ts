@@ -1,107 +1,65 @@
-import postgres from 'postgres';
-import { SCHEMA_SQL } from './schema.mjs';
-import rubricData from './rubric.generated.json';
-import type { Role } from './config';
+import { createClient } from '@supabase/supabase-js'
+import { getEnv } from './env'
 
-export type Criterion = {
-  id: string;
-  role: Role;
-  position: number;
-  name: string;
-  weight: number;
-  anchor_5: string;
-  anchor_3: string;
-  anchor_1: string;
-  source: string;
-};
+let client: any = null
 
-export type PersonalDetails = {
-  name?: string;
-  email?: string;
-  phone?: string;
-  links?: string[];
-};
-
-export type CandidateRow = {
-  id: string;
-  created_at: string;
-  file_name: string | null;
-  applied_role: Role;
-  personal_details: PersonalDetails;
-  cv_text: string;
-  status: 'new' | 'scored' | 'error';
-  attempts: number;
-  last_error: string | null;
-  headline: string | null;
-  pm_score: number | null;
-  spm_score: number | null;
-  decision_override: 'invite' | 'reject' | null;
-  brief: string | null;
-  draft_decision: 'invite' | 'reject' | null;
-  email_subject: string | null;
-  email_body: string | null;
-  draft_edited: boolean;
-  draft_error: string | null;
-  email_status: 'none' | 'sending' | 'sent' | 'failed';
-  sent_at: string | null;
-  sent_to: string | null;
-  send_error: string | null;
-};
-
-const globalForDb = globalThis as unknown as { __sql?: postgres.Sql; __ready?: Promise<void> };
-
-export function sql(): postgres.Sql {
-  if (!globalForDb.__sql) {
-    const url = process.env.DATABASE_URL;
-    if (!url) throw new Error('DATABASE_URL is not set');
-    const local = /@(localhost|127\.0\.0\.1)[:/]/.test(url);
-    globalForDb.__sql = postgres(url, {
-      // Required for Supabase's transaction pooler (port 6543) and harmless elsewhere.
-      prepare: false,
-      max: 3,
-      idle_timeout: 20,
-      ssl: local || /sslmode=disable/.test(url) ? false : 'require',
-      types: { numeric: { to: 1700, from: [1700], serialize: String, parse: Number } },
-      onnotice: () => {},
-    });
+function decodeJwt(token: string): Record<string, any> | null {
+  const parts = token.split('.')
+  if (parts.length !== 3) return null
+  try {
+    return JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'))
+  } catch {
+    return null
   }
-  return globalForDb.__sql;
 }
 
-async function setup() {
-  const db = sql();
-  await db.begin(async (tx) => {
-    await tx`select pg_advisory_xact_lock(424242)`;
-    await tx.unsafe(SCHEMA_SQL);
-    const [{ n }] = await tx`select count(*)::int as n from rubric_criteria`;
-    if (n === 0) {
-      for (const c of rubricData.criteria) {
-        await tx`insert into rubric_criteria ${tx(c, 'id', 'role', 'position', 'name', 'weight', 'anchor_5', 'anchor_3', 'anchor_1', 'source')}
-                 on conflict (id) do nothing`;
+function configProblem(url: string, key: string): string | null {
+  if (!url || url === 'https://example.supabase.co') {
+    return 'SUPABASE_URL is not set on this deployment (or is still the placeholder). Set it to your project URL and redeploy.'
+  }
+  if (!key) {
+    return 'SUPABASE_SERVICE_ROLE_KEY is not set on this deployment. Set it and redeploy.'
+  }
+  if (key.startsWith('sb_publishable_')) {
+    return 'SUPABASE_SERVICE_ROLE_KEY is a publishable (public) key. Use the secret / service_role key instead.'
+  }
+  const payload = decodeJwt(key)
+  if (payload) {
+    if (payload.role && payload.role !== 'service_role') {
+      return `SUPABASE_SERVICE_ROLE_KEY has role "${payload.role}" (the public anon key). Use the service_role secret key instead.`
+    }
+    const host = (() => {
+      try {
+        return new URL(url).hostname.split('.')[0]
+      } catch {
+        return ''
       }
+    })()
+    if (payload.ref && host && payload.ref !== host) {
+      return `SUPABASE_SERVICE_ROLE_KEY belongs to project "${payload.ref}" but SUPABASE_URL points to "${host}". They must be the same project.`
     }
-    for (const [key, content] of Object.entries(rubricData.guidance)) {
-      await tx`insert into rubric_guidance (key, content) values (${key}, ${content})
-               on conflict (key) do nothing`;
-    }
-  });
-}
-
-/** Creates tables and seeds the rubric on first use. Safe to call on every request. */
-export async function ready(): Promise<postgres.Sql> {
-  if (!globalForDb.__ready) {
-    globalForDb.__ready = setup().catch((e) => {
-      globalForDb.__ready = undefined;
-      throw e;
-    });
   }
-  await globalForDb.__ready;
-  return sql();
+  return null
 }
 
-export async function getRubric(): Promise<{ criteria: Criterion[]; guidance: Record<string, string> }> {
-  const db = await ready();
-  const criteria = await db<Criterion[]>`select * from rubric_criteria order by role, position`;
-  const g = await db<{ key: string; content: string }[]>`select key, content from rubric_guidance`;
-  return { criteria, guidance: Object.fromEntries(g.map((r) => [r.key, r.content])) };
+export function getSupabase(): any {
+  if (client) return client
+  const env = getEnv()
+  const problem = configProblem(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY)
+  if (problem) throw new Error(problem)
+  client = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+  return client
 }
+
+export const supabase: any = new Proxy(
+  {},
+  {
+    get: (_, prop) => {
+      const c = getSupabase()
+      const value = c[prop]
+      return typeof value === 'function' ? value.bind(c) : value
+    },
+  }
+)

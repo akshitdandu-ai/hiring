@@ -2,7 +2,14 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { env } from './env'
 import { z } from 'zod'
 
-const client = new GoogleGenerativeAI(env.GEMINI_API_KEY)
+let client: GoogleGenerativeAI | null = null
+
+function getClient(): GoogleGenerativeAI {
+  if (!client) {
+    client = new GoogleGenerativeAI(env.GEMINI_API_KEY)
+  }
+  return client
+}
 
 const selectionSchema = z.object({
   picks: z.array(
@@ -47,7 +54,7 @@ async function callGeminiWithRetry<T>(
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      const model = client.getGenerativeModel({
+      const model = getClient().getGenerativeModel({
         model: env.GEMINI_MODEL,
         generationConfig: {
           temperature: 0.7,

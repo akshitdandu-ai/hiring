@@ -3,18 +3,25 @@ import { env } from './env'
 import { supabase } from './db'
 import { nowIST, formatIST } from './utils'
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: env.GMAIL_USER,
-    pass: env.GMAIL_APP_PASSWORD,
-  },
-  pool: true,
-  maxConnections: 3,
-  maxMessages: 100,
-  rateDelta: 1000,
-  rateLimit: 5,
-})
+let transporter: nodemailer.Transporter | null = null
+
+function getTransporter(): nodemailer.Transporter {
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: env.GMAIL_USER,
+        pass: env.GMAIL_APP_PASSWORD,
+      },
+      pool: true,
+      maxConnections: 3,
+      maxMessages: 100,
+      rateDelta: 1000,
+      rateLimit: 5,
+    })
+  }
+  return transporter
+}
 
 async function buildEmailHTML(
   issue: any,
@@ -171,7 +178,7 @@ export async function sendEmails(
       try {
         const unsubscribeLink = `${env.APP_BASE_URL}/unsubscribe?token=${subscriber.unsubscribe_token}`
 
-        const info = await transporter.sendMail({
+        const info = await getTransporter().sendMail({
           from: `${env.NEWSLETTER_FROM_NAME} <${env.GMAIL_USER}>`,
           to: subscriber.email,
           subject: issue.subject,

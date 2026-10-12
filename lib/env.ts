@@ -7,7 +7,7 @@ const envSchema = z.object({
   CRON_SECRET: z.string().min(32).optional().default('0'.repeat(32)),
   ADMIN_EMAIL: z.string().email().optional().default('admin@example.com'),
 
-  SUPABASE_URL: z.string().url().optional().default('https://example.supabase.co'),
+  SUPABASE_URL: z.string().url().optional().default('https://ieswznfeslytsghixibk.supabase.co'),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional().default(''),
 
   GEMINI_API_KEY: z.string().optional().default(''),

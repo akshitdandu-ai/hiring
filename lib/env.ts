@@ -35,7 +35,11 @@ export function getEnv(): Env {
   if (validatedEnv) return validatedEnv
 
   try {
-    validatedEnv = envSchema.parse(process.env)
+    validatedEnv = envSchema.parse({
+      ...process.env,
+      SUPABASE_URL: process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY,
+    })
     return validatedEnv
   } catch (error) {
     // During build, some env vars might not be set, that's ok

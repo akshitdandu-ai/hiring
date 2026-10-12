@@ -5,6 +5,8 @@ import { runSelection } from '@/lib/jobs/select'
 import { runReminder } from '@/lib/jobs/reminder'
 import { runSend } from '@/lib/jobs/send'
 
+export const maxDuration = 300
+
 export async function POST(req: NextRequest, context: any) {
   const isAuthenticated = await verifySession()
 
@@ -34,11 +36,19 @@ export async function POST(req: NextRequest, context: any) {
         return NextResponse.json({ error: 'Unknown job' }, { status: 400 })
     }
 
-    return NextResponse.json({ success: true, data: result, message: result.message || 'Job completed' })
+    const ok = result?.ok !== false
+    const summary = result?.message || (result ? JSON.stringify(result) : 'Job completed')
+    return NextResponse.json(
+      { success: ok, data: result, message: ok ? summary : `Job failed: ${summary}` },
+      { status: ok ? 200 : 422 }
+    )
   } catch (error) {
     console.error('Job error:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error', message: 'Job failed' },
+      {
+        error: error instanceof Error ? error.message : 'Internal server error',
+        message: `Job failed: ${error instanceof Error ? error.message : String(error)}`,
+      },
       { status: 500 }
     )
   }

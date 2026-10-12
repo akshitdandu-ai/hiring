@@ -45,11 +45,12 @@ const subjectSchema = z.object({
   intro: z.string(),
 })
 
-async function callGeminiWithRetry<T>(
-  prompt: string,
-  schema?: any,
-  maxRetries = 3
-): Promise<T> {
+function extractJson(text: string): unknown {
+  const cleaned = text.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim()
+  return JSON.parse(cleaned)
+}
+
+async function callGeminiWithRetry<T>(prompt: string, schema: z.ZodType<T>, maxRetries = 3): Promise<T> {
   let lastError: Error | null = null
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -60,30 +61,29 @@ async function callGeminiWithRetry<T>(
           temperature: 0.7,
           topK: 40,
           topP: 0.9,
-          responseMimeType: schema ? 'application/json' : 'text/plain',
-          ...(schema && { responseSchema: schema }),
+          responseMimeType: 'application/json',
         },
       })
 
       const result = await model.generateContent(prompt)
-      const text = result.response.text()
-
-      if (schema) {
-        return JSON.parse(text) as T
-      }
-      return text as T
+      return schema.parse(extractJson(result.response.text()))
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error))
 
-      // Check if it's a rate limit error
-      if (lastError.message.includes('429') || lastError.message.includes('too many')) {
+      const retryable =
+        lastError.message.includes('429') ||
+        lastError.message.includes('503') ||
+        lastError.message.toLowerCase().includes('too many') ||
+        lastError instanceof SyntaxError ||
+        lastError instanceof z.ZodError
+
+      if (retryable && attempt < maxRetries - 1) {
         const backoffMs = Math.pow(2, attempt) * 1000 + Math.random() * 1000
-        console.log(`Rate limited, waiting ${backoffMs}ms before retry...`)
+        console.log(`Gemini call failed (${lastError.message.slice(0, 100)}), retrying in ${Math.round(backoffMs)}ms`)
         await new Promise((resolve) => setTimeout(resolve, backoffMs))
         continue
       }
 
-      // Don't retry on other errors
       throw lastError
     }
   }
@@ -143,7 +143,7 @@ Select 8-10 picks and provide 5 backups ranked by signal. Output JSON:
   "issue_theme": "one line theme for this week"
 }`
 
-  const result = await callGeminiWithRetry<z.infer<typeof selectionSchema>>(prompt)
+  const result = await callGeminiWithRetry(prompt, selectionSchema)
 
   return result
 }
@@ -169,9 +169,9 @@ ${styleGuide}
 Articles to comment on:
 ${articlesText}
 
-Output JSON array with IDs and commentary.`
+Output JSON: { "items": [{ "article_id": "uuid", "commentary": "string" }] } with one entry per article.`
 
-  const result = await callGeminiWithRetry<z.infer<typeof commentarySchema>>(prompt)
+  const result = await callGeminiWithRetry(prompt, commentarySchema)
 
   return result.items
 }
@@ -186,7 +186,7 @@ ${styleGuide}
 
 Output JSON: { "subject": "string", "intro": "string" }`
 
-  const result = await callGeminiWithRetry<z.infer<typeof subjectSchema>>(prompt)
+  const result = await callGeminiWithRetry(prompt, subjectSchema)
 
   return result
 }

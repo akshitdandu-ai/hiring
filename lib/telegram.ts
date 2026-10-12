@@ -6,8 +6,8 @@ interface InlineButton {
 }
 
 interface SendOptions {
-  parseMode?: 'HTML' | 'Markdown'
-  replyMarkup?: {
+  parse_mode?: 'HTML' | 'Markdown'
+  reply_markup?: {
     inline_keyboard: Array<Array<InlineButton>>
   }
 }
@@ -22,11 +22,11 @@ export async function sendTelegramMessage(
   }
 
   const options: SendOptions = {
-    parseMode: 'HTML',
+    parse_mode: 'HTML',
   }
 
   if (buttons && buttons.length > 0) {
-    options.replyMarkup = {
+    options.reply_markup = {
       inline_keyboard: [buttons.map((b) => ({ text: b.text, callback_data: b.callback_data }))],
     }
   }
@@ -60,11 +60,11 @@ export async function editTelegramMessage(
   buttons?: InlineButton[]
 ): Promise<any> {
   const options: SendOptions = {
-    parseMode: 'HTML',
+    parse_mode: 'HTML',
   }
 
   if (buttons && buttons.length > 0) {
-    options.replyMarkup = {
+    options.reply_markup = {
       inline_keyboard: [buttons.map((b) => ({ text: b.text, callback_data: b.callback_data }))],
     }
   }

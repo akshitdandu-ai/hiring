@@ -40,7 +40,7 @@ export default function AdminPage() {
         method: 'POST',
       })
       const data = await res.json()
-      setMessage(data.message || 'Job triggered')
+      setMessage(data.message || data.error || (res.ok ? 'Job triggered' : `Job failed (HTTP ${res.status})`))
     } catch (err) {
       setMessage('Error triggering job')
     }

@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server'
 import { getEnv } from '@/lib/env'
+import { verifySession } from '@/lib/auth'
 
 export async function GET() {
+  if (!(await verifySession())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     const env = getEnv()
 

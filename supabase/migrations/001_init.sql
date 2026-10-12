@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS sources (
 );
 
 ALTER TABLE sources ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "service_role_access" ON sources FOR ALL USING (TRUE) TO authenticated, service_role;
+CREATE POLICY "no_access" ON sources FOR ALL USING (FALSE);
 
 -- Articles table
 CREATE TABLE IF NOT EXISTS articles (
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS articles (
 );
 
 ALTER TABLE articles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "service_role_access" ON articles FOR ALL USING (TRUE) TO authenticated, service_role;
+CREATE POLICY "no_access" ON articles FOR ALL USING (FALSE);
 
 CREATE INDEX articles_week_key_status ON articles(week_key, status);
 CREATE INDEX articles_fetched_at ON articles(fetched_at);
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS issues (
 );
 
 ALTER TABLE issues ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "service_role_access" ON issues FOR ALL USING (TRUE) TO authenticated, service_role;
+CREATE POLICY "no_access" ON issues FOR ALL USING (FALSE);
 
 CREATE INDEX issues_status ON issues(status);
 CREATE INDEX issues_scheduled_for ON issues(scheduled_for);
@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS issue_items (
 );
 
 ALTER TABLE issue_items ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "service_role_access" ON issue_items FOR ALL USING (TRUE) TO authenticated, service_role;
+CREATE POLICY "no_access" ON issue_items FOR ALL USING (FALSE);
 
 CREATE INDEX issue_items_issue_id ON issue_items(issue_id);
 CREATE INDEX issue_items_article_id ON issue_items(article_id);
@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS style_guide (
 );
 
 ALTER TABLE style_guide ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "service_role_access" ON style_guide FOR ALL USING (TRUE) TO authenticated, service_role;
+CREATE POLICY "no_access" ON style_guide FOR ALL USING (FALSE);
 
 -- Subscribers table
 CREATE TABLE IF NOT EXISTS subscribers (
@@ -123,7 +123,7 @@ CREATE TABLE IF NOT EXISTS subscribers (
 );
 
 ALTER TABLE subscribers ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "service_role_access" ON subscribers FOR ALL USING (TRUE) TO authenticated, service_role;
+CREATE POLICY "no_access" ON subscribers FOR ALL USING (FALSE);
 
 CREATE INDEX subscribers_email ON subscribers(email);
 CREATE INDEX subscribers_status ON subscribers(status);
@@ -141,7 +141,7 @@ CREATE TABLE IF NOT EXISTS send_log (
 );
 
 ALTER TABLE send_log ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "service_role_access" ON send_log FOR ALL USING (TRUE) TO authenticated, service_role;
+CREATE POLICY "no_access" ON send_log FOR ALL USING (FALSE);
 
 -- Processed mail table
 CREATE TABLE IF NOT EXISTS processed_mail (
@@ -151,7 +151,7 @@ CREATE TABLE IF NOT EXISTS processed_mail (
 );
 
 ALTER TABLE processed_mail ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "service_role_access" ON processed_mail FOR ALL USING (TRUE) TO authenticated, service_role;
+CREATE POLICY "no_access" ON processed_mail FOR ALL USING (FALSE);
 
 -- Bot state table
 CREATE TABLE IF NOT EXISTS bot_state (
@@ -162,7 +162,7 @@ CREATE TABLE IF NOT EXISTS bot_state (
 );
 
 ALTER TABLE bot_state ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "service_role_access" ON bot_state FOR ALL USING (TRUE) TO authenticated, service_role;
+CREATE POLICY "no_access" ON bot_state FOR ALL USING (FALSE);
 
 -- Run logs table
 CREATE TABLE IF NOT EXISTS run_logs (
@@ -176,6 +176,6 @@ CREATE TABLE IF NOT EXISTS run_logs (
 );
 
 ALTER TABLE run_logs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "service_role_access" ON run_logs FOR ALL USING (TRUE) TO authenticated, service_role;
+CREATE POLICY "no_access" ON run_logs FOR ALL USING (FALSE);
 
 CREATE INDEX run_logs_job_date ON run_logs(job, created_at DESC);

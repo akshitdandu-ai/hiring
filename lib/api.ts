@@ -11,8 +11,15 @@ export function handler<A extends unknown[]>(fn: (...args: A) => Promise<Respons
     try {
       return await fn(...args);
     } catch (e) {
-      const err = e as Error & { status?: number };
+      const err = e as Error & { status?: number; code?: string };
       console.error(err);
+      // Database unreachable (e.g. Supabase free project paused after a week of inactivity).
+      if (/tenant\/user .* not found|Tenant or user not found|ENOTFOUND|ECONNREFUSED|CONNECT_TIMEOUT|ETIMEDOUT/i.test(`${err.code ?? ''} ${err.message}`)) {
+        return NextResponse.json(
+          { error: 'Cannot reach the database. If the Supabase project was paused for inactivity, restore it in the Supabase dashboard, then try again.' },
+          { status: 503 },
+        );
+      }
       return NextResponse.json({ error: err.message || 'Unexpected error' }, { status: err.status && err.status >= 400 ? err.status : 500 });
     }
   };

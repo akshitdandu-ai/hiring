@@ -10,7 +10,7 @@ type Item = {
   key: string;
   file: File;
   role: Role;
-  state: 'waiting' | 'uploading' | 'saved' | 'duplicate' | 'failed';
+  state: 'waiting' | 'uploading' | 'saved' | 'duplicate' | 'failed' | 'error';
   message?: string;
 };
 
@@ -21,6 +21,7 @@ const PILL: Record<Item['state'], [string, string]> = {
   saved: ['green', 'Uploaded'],
   duplicate: ['grey', 'Already uploaded'],
   failed: ['red', 'Could not read'],
+  error: ['red', 'Upload failed'],
 };
 
 export default function UploadPage() {
@@ -51,17 +52,19 @@ export default function UploadPage() {
       const res = await fetch('/api/candidates', { method: 'POST', body: fd });
       const data = await res.json().catch(() => ({}));
       if (res.status === 409) return update(it.key, { state: 'duplicate' });
-      if (!res.ok) return update(it.key, { state: 'failed', message: data.error || 'Upload failed' });
+      // 422 = the file itself couldn't be read; anything else is a server problem and can be retried.
+      if (res.status === 422) return update(it.key, { state: 'failed', message: data.error || 'Could not read this file' });
+      if (!res.ok) return update(it.key, { state: 'error', message: data.error || 'Upload failed - try again' });
       update(it.key, { state: 'saved', message: data.name || 'Name not found on CV' });
     } catch {
-      update(it.key, { state: 'failed', message: 'Network error - try again' });
+      update(it.key, { state: 'error', message: 'Network error - try again' });
     }
   }
 
   async function start() {
     setBusy(true);
     setDone(false);
-    const queue = items.filter((i) => i.state === 'waiting');
+    const queue = items.filter((i) => i.state === 'waiting' || i.state === 'error');
     const work = async () => {
       for (let it = queue.shift(); it; it = queue.shift()) await uploadOne(it);
     };
@@ -78,7 +81,7 @@ export default function UploadPage() {
     setDone(true);
   }
 
-  const waiting = items.filter((i) => i.state === 'waiting').length;
+  const waiting = items.filter((i) => i.state === 'waiting' || i.state === 'error').length;
   const left = progress ? progress.status.scoring + progress.status.drafts : 0;
   const pct = total ? Math.round(((total - left) / total) * 100) : 0;
 

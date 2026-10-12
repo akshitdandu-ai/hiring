@@ -38,7 +38,15 @@ export async function POST(req: NextRequest, context: any) {
     }
 
     const ok = result?.ok !== false
-    const summary = result?.message || (result ? JSON.stringify(result) : 'Job completed')
+    const failedFeeds = result?.errors ? Object.keys(result.errors) : []
+    const summary =
+      result?.message ||
+      (typeof result?.inserted === 'number'
+        ? `Ingest done: fetched ${result.fetched}, new ${result.inserted}, duplicates ${result.duplicates}` +
+          (failedFeeds.length ? `. ${failedFeeds.length} feed(s) failed: ${failedFeeds.join(', ')}` : '')
+        : result
+          ? JSON.stringify(result)
+          : 'Job completed')
     return NextResponse.json(
       { success: ok, data: result, message: ok ? summary : `Job failed: ${summary}` },
       { status: ok ? 200 : 422 }

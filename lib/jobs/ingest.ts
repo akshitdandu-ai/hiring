@@ -12,29 +12,34 @@ interface IngestResult {
 }
 
 const parser = new Parser({
+  timeout: 15000,
+  headers: {
+    'User-Agent':
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+    Accept: 'application/rss+xml, application/xml, text/xml, */*',
+  },
   customFields: {
     item: [['content:encoded', 'fullContent']],
   },
 })
 
-async function fetchRSSFeed(url: string, timeout = 10000): Promise<any[]> {
+async function fetchRSSFeed(url: string): Promise<{ items: any[]; error?: string }> {
   try {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), timeout)
-
     const feed = await parser.parseURL(url)
-    clearTimeout(timeoutId)
 
-    return feed.items.map((item: any) => ({
+    const items = feed.items.map((item: any) => ({
       title: item.title || '',
       link: item.link || '',
-      pubDate: item.pubDate ? new Date(item.pubDate) : new Date(),
+      pubDate: item.pubDate && !isNaN(new Date(item.pubDate).getTime()) ? new Date(item.pubDate) : new Date(),
       summary: (item.contentSnippet || item.description || item.fullContent || '').slice(0, 600).replace(/<[^>]+>/g, ''),
       source: feed.title || 'Unknown',
     }))
+
+    return items.length > 0 ? { items } : { items, error: 'Feed loaded but contained no items' }
   } catch (err) {
-    console.error(`Error fetching ${url}:`, err instanceof Error ? err.message : err)
-    return []
+    const error = err instanceof Error ? err.message : String(err)
+    console.error(`Error fetching ${url}:`, error)
+    return { items: [], error }
   }
 }
 
@@ -102,13 +107,24 @@ export async function runIngest(): Promise<IngestResult> {
       const batch = sources.slice(i, i + concurrencyLimit)
       const batchResults = await Promise.all(batch.map((source: any) => fetchRSSFeed(source.url_or_query)))
 
-      batchResults.forEach((batchItems: any, index: number) => {
+      for (let index = 0; index < batchResults.length; index++) {
+        const { items: batchItems, error: feedError } = batchResults[index]
         const source = batch[index]
         result.fetched += batchItems.length
 
-        if (batchItems.length === 0) {
-          result.errors[source.name] = 'No items fetched'
-          return
+        await supabase
+          .from('sources')
+          .update({
+            last_fetched_at: new Date().toISOString(),
+            last_ok: !feedError,
+            last_error: feedError || null,
+            items_last_run: batchItems.length,
+          })
+          .eq('id', source.id)
+
+        if (feedError) {
+          result.errors[source.name] = feedError
+          continue
         }
 
         items.push(
@@ -118,7 +134,7 @@ export async function runIngest(): Promise<IngestResult> {
             sourceName: source.name,
           }))
         )
-      })
+      }
     }
 
     console.log(`✓ Fetched ${result.fetched} articles\n`)

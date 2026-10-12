@@ -38,6 +38,11 @@ export function getEnv(): Env {
     validatedEnv = envSchema.parse(process.env)
     return validatedEnv
   } catch (error) {
+    // During build, some env vars might not be set, that's ok
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+      return {} as Env
+    }
+
     if (error instanceof z.ZodError) {
       const missing = error.errors
         .map((e) => `${e.path.join('.')}: ${e.message}`)
@@ -50,4 +55,16 @@ export function getEnv(): Env {
   }
 }
 
-export const env = getEnv()
+let envInstance: Env | null = null
+
+export function getEnvInstance(): Env {
+  if (!envInstance) {
+    envInstance = getEnv()
+  }
+  return envInstance
+}
+
+// Lazy-loaded env - only validates on first property access
+export const env = new Proxy({} as any, {
+  get: (_, prop) => getEnvInstance()[prop as keyof Env],
+}) as Env

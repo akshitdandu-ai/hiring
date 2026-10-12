@@ -13,7 +13,7 @@ interface SelectionResult {
 async function validateAndRepair(
   picks: Array<{ id: string; topic: string }>,
   backups: Array<{ id: string; topic: string }>,
-  candidates: Array<{ id: string }>,
+  candidates: Array<{ id: string; topic: string }>,
   maxPicks = 10,
   minPicks = 8,
   minTopics = 3
@@ -85,15 +85,17 @@ export async function runSelection(force = false): Promise<SelectionResult> {
     console.log(`📝 Running selection for week ${weekKey}...`)
 
     // Get candidates
-    const { data: candidates } = await supabase
+    let { data: candidates } = await supabase
       .from('articles')
       .select('id, title, source_name, published_at, topic, summary')
       .eq('week_key', weekKey)
       .in('status', ['new', 'duplicate'])
       .order('published_at', { ascending: false })
 
-    if (!candidates || candidates.length < 25) {
-      console.log(`⚠️  Only ${candidates?.length || 0} articles this week. Falling back to last 7 days...`)
+    if (!candidates) candidates = []
+
+    if (candidates.length < 25) {
+      console.log(`⚠️  Only ${candidates.length} articles this week. Falling back to last 7 days...`)
 
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
       const { data: fallbackCandidates } = await supabase
@@ -126,7 +128,7 @@ export async function runSelection(force = false): Promise<SelectionResult> {
       const { data: lastItems } = await supabase
         .from('issue_items')
         .select('article_id')
-        .in('issue_id', lastIssues.map((i) => i.id))
+        .in('issue_id', lastIssues.map((i: any) => i.id))
         .eq('role', 'pick')
 
       if (lastItems) {
@@ -135,10 +137,10 @@ export async function runSelection(force = false): Promise<SelectionResult> {
           .select('title')
           .in(
             'id',
-            lastItems.map((i) => i.article_id)
+            lastItems.map((i: any) => i.article_id)
           )
 
-        lastHeadlines = articles?.map((a) => a.title) || []
+        lastHeadlines = articles?.map((a: any) => a.title) || []
       }
     }
 
@@ -151,7 +153,7 @@ export async function runSelection(force = false): Promise<SelectionResult> {
     console.log(`🤖 Running Gemini selection pass...`)
 
     const selection = await selectArticles(
-      candidates.map((c) => ({
+      candidates.map((c: any) => ({
         id: c.id,
         title: c.title,
         source: c.source_name || 'Unknown',
@@ -165,9 +167,9 @@ export async function runSelection(force = false): Promise<SelectionResult> {
 
     // Validate and repair
     let { picks, backups } = await validateAndRepair(
-      selection.picks.map((p) => ({ id: p.article_id, topic: p.topic })),
-      selection.backups.map((b) => ({ id: b.article_id, topic: b.topic })),
-      candidates.map((c) => ({ id: c.id }))
+      selection.picks.map((p: any) => ({ id: p.article_id, topic: p.topic })),
+      selection.backups.map((b: any) => ({ id: b.article_id, topic: b.topic })),
+      candidates.map((c: any) => ({ id: c.id, topic: c.topic || 'Other' }))
     )
 
     console.log(`✓ Selection: ${picks.length} picks, ${backups.length} backups`)
@@ -176,10 +178,10 @@ export async function runSelection(force = false): Promise<SelectionResult> {
     console.log(`📄 Generating commentary...`)
 
     const itemsToComment = [...picks, ...backups]
-    const articleDetails = candidates.filter((c) => itemsToComment.some((i) => i.id === c.id))
+    const articleDetails = candidates.filter((c: any) => itemsToComment.some((i: any) => i.id === c.id))
 
     const commentary = await generateCommentary(
-      articleDetails.map((a) => ({
+      articleDetails.map((a: any) => ({
         id: a.id,
         title: a.title,
         source: a.source_name || 'Unknown',

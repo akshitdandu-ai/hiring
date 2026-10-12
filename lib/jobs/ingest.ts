@@ -25,7 +25,7 @@ async function fetchRSSFeed(url: string, timeout = 10000): Promise<any[]> {
     const feed = await parser.parseURL(url)
     clearTimeout(timeoutId)
 
-    return feed.items.map((item) => ({
+    return feed.items.map((item: any) => ({
       title: item.title || '',
       link: item.link || '',
       pubDate: item.pubDate ? new Date(item.pubDate) : new Date(),
@@ -60,7 +60,7 @@ async function getExcludedArticles() {
   const { data: items, error } = await supabase
     .from('issue_items')
     .select('article_id')
-    .in('issue_id', lastIssues.map((i) => i.id))
+    .in('issue_id', lastIssues.map((i: any) => i.id))
     .eq('role', 'pick')
 
   if (error) {
@@ -68,7 +68,7 @@ async function getExcludedArticles() {
     return []
   }
 
-  return items.map((i) => i.article_id)
+  return items.map((i: any) => i.article_id)
 }
 
 export async function runIngest(): Promise<IngestResult> {
@@ -100,9 +100,9 @@ export async function runIngest(): Promise<IngestResult> {
 
     for (let i = 0; i < sources.length; i += concurrencyLimit) {
       const batch = sources.slice(i, i + concurrencyLimit)
-      const batchResults = await Promise.all(batch.map((source) => fetchRSSFeed(source.url_or_query)))
+      const batchResults = await Promise.all(batch.map((source: any) => fetchRSSFeed(source.url_or_query)))
 
-      batchResults.forEach((batchItems, index) => {
+      batchResults.forEach((batchItems: any, index: number) => {
         const source = batch[index]
         result.fetched += batchItems.length
 
@@ -112,7 +112,7 @@ export async function runIngest(): Promise<IngestResult> {
         }
 
         items.push(
-          ...batchItems.map((item) => ({
+          ...batchItems.map((item: any) => ({
             ...item,
             sourceId: source.id,
             sourceName: source.name,
@@ -167,7 +167,7 @@ export async function runIngest(): Promise<IngestResult> {
 
       // Check if excluded
       let isExcluded = false
-      if (excludedIds.some((id) => id)) {
+      if (excludedIds.some((id: any) => id)) {
         isExcluded = true
         result.excluded++
       }

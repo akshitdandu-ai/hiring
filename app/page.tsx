@@ -1,6 +1,44 @@
+'use client'
+
+import { useState } from 'react'
 import Link from 'next/link'
 
 export default function HomePage() {
+  const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
+  const [success, setSuccess] = useState(false)
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setMessage('')
+
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok) {
+        setSuccess(true)
+        setMessage(data.message)
+        setEmail('')
+        setName('')
+      } else {
+        setMessage(data.message || 'Subscription failed')
+      }
+    } catch (err) {
+      setMessage('Error subscribing')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-dispatch-50 via-white to-dispatch-100">
       <div className="max-w-4xl mx-auto px-4 py-16">
@@ -15,33 +53,47 @@ export default function HomePage() {
         {/* Signup Form */}
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md mx-auto mb-16">
           <h2 className="text-2xl font-bold mb-6">Subscribe</h2>
-          <form className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Email</label>
-              <input
-                type="email"
-                name="email"
-                required
-                placeholder="you@example.com"
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-dispatch-500 focus:border-transparent"
-              />
+          {!success ? (
+            <form onSubmit={handleSubscribe} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Email</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-dispatch-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Name (optional)</label>
+                <input
+                  type="text"
+                  placeholder="Your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-dispatch-500 focus:border-transparent"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-dispatch-600 text-white font-bold py-2 rounded-lg hover:bg-dispatch-700 transition-colors disabled:opacity-50"
+              >
+                {loading ? 'Subscribing...' : 'Subscribe'}
+              </button>
+            </form>
+          ) : (
+            <div className="text-center">
+              <div className="text-4xl mb-3">✓</div>
+              <p className="text-slate-600 font-medium">{message}</p>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Name (optional)</label>
-              <input
-                type="text"
-                name="name"
-                placeholder="Your name"
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-dispatch-500 focus:border-transparent"
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-dispatch-600 text-white font-bold py-2 rounded-lg hover:bg-dispatch-700 transition-colors"
-            >
-              Subscribe
-            </button>
-          </form>
+          )}
+
+          {message && !success && (
+            <p className="text-red-600 text-sm mt-4 text-center">{message}</p>
+          )}
         </div>
 
         {/* About */}

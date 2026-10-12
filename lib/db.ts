@@ -1,7 +1,24 @@
 import { createClient } from '@supabase/supabase-js'
-import { env } from './env'
+import { getEnv } from './env'
+
+let supabaseInstance: any = null
 
 // Initialize Supabase client (server-side only, uses service role key)
-export const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY)
+function initSupabase() {
+  if (supabaseInstance) return supabaseInstance
 
-export type Database = Awaited<ReturnType<typeof supabase.from('articles').select('*', { count: 'exact' })>>['data']
+  try {
+    const env = getEnv()
+    supabaseInstance = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY)
+  } catch (err) {
+    // During build, this might fail, but that's ok
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+      return null
+    }
+    throw err
+  }
+
+  return supabaseInstance
+}
+
+export const supabase = initSupabase() || ({} as any)

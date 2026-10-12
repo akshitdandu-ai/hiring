@@ -117,17 +117,17 @@ export async function sendEmails(
     }
 
     // Get article details
-    const articleIds = items.map((i) => i.article_id)
+    const articleIds = items.map((i: any) => i.article_id)
     const { data: articles } = await supabase
       .from('articles')
       .select('id, title, url, source_name')
       .in('id', articleIds)
 
-    const articleMap = new Map(articles?.map((a) => [a.id, a]) || [])
+    const articleMap = new Map(articles?.map((a: any) => [a.id, a]) || [])
 
     // Enrich items with article data
-    const enrichedItems = items.map((item) => {
-      const article = articleMap.get(item.article_id)
+    const enrichedItems = items.map((item: any) => {
+      const article = articleMap.get(item.article_id) as any
       return {
         ...item,
         article_title: article?.title || '',
@@ -153,10 +153,10 @@ export async function sendEmails(
       .eq('issue_id', issueId)
       .eq('status', 'sent')
 
-    const sentIds = new Set(sentLog?.map((s) => s.subscriber_id) || [])
+    const sentIds = new Set(sentLog?.map((s: any) => s.subscriber_id) || [])
 
     // Filter to unsent
-    const toSend = subscribers.filter((s) => !sentIds.has(s.id))
+    const toSend = subscribers.filter((s: any) => !sentIds.has(s.id))
 
     console.log(`Sending to ${toSend.length} unsent subscribers`)
 

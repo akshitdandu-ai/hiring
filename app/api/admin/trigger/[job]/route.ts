@@ -5,14 +5,14 @@ import { runSelection } from '@/lib/jobs/select'
 import { runReminder } from '@/lib/jobs/reminder'
 import { runSend } from '@/lib/jobs/send'
 
-export async function POST(req: NextRequest, { params }: { params: { job: string } }) {
+export async function POST(req: NextRequest, context: any) {
   const isAuthenticated = await verifySession()
 
   if (!isAuthenticated) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { job } = params
+  const { job } = await context.params
 
   try {
     let result: any

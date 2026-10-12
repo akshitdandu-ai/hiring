@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import { env } from './env'
 import { z } from 'zod'
 
@@ -136,39 +136,7 @@ Select 8-10 picks and provide 5 backups ranked by signal. Output JSON:
   "issue_theme": "one line theme for this week"
 }`
 
-  const result = await callGeminiWithRetry<z.infer<typeof selectionSchema>>(prompt, {
-    type: SchemaType.OBJECT,
-    properties: {
-      picks: {
-        type: SchemaType.ARRAY,
-        items: {
-          type: SchemaType.OBJECT,
-          properties: {
-            article_id: { type: SchemaType.STRING },
-            topic: { type: SchemaType.STRING },
-            why_selected: { type: SchemaType.STRING },
-            signal_score: { type: SchemaType.NUMBER },
-          },
-          required: ['article_id', 'topic', 'why_selected', 'signal_score'],
-        },
-      },
-      backups: {
-        type: SchemaType.ARRAY,
-        items: {
-          type: SchemaType.OBJECT,
-          properties: {
-            article_id: { type: SchemaType.STRING },
-            topic: { type: SchemaType.STRING },
-            why_selected: { type: SchemaType.STRING },
-            rank: { type: SchemaType.NUMBER },
-          },
-          required: ['article_id', 'topic', 'why_selected', 'rank'],
-        },
-      },
-      issue_theme: { type: SchemaType.STRING },
-    },
-    required: ['picks', 'backups', 'issue_theme'],
-  })
+  const result = await callGeminiWithRetry<z.infer<typeof selectionSchema>>(prompt)
 
   return result
 }
@@ -196,26 +164,7 @@ ${articlesText}
 
 Output JSON array with IDs and commentary.`
 
-  const result = await callGeminiWithRetry<z.infer<typeof commentarySchema>>(
-    prompt,
-    {
-      type: SchemaType.OBJECT,
-      properties: {
-        items: {
-          type: SchemaType.ARRAY,
-          items: {
-            type: SchemaType.OBJECT,
-            properties: {
-              article_id: { type: SchemaType.STRING },
-              commentary: { type: SchemaType.STRING },
-            },
-            required: ['article_id', 'commentary'],
-          },
-        },
-      },
-      required: ['items'],
-    }
-  )
+  const result = await callGeminiWithRetry<z.infer<typeof commentarySchema>>(prompt)
 
   return result.items
 }
@@ -230,17 +179,7 @@ ${styleGuide}
 
 Output JSON: { "subject": "string", "intro": "string" }`
 
-  const result = await callGeminiWithRetry<z.infer<typeof subjectSchema>>(
-    prompt,
-    {
-      type: SchemaType.OBJECT,
-      properties: {
-        subject: { type: SchemaType.STRING },
-        intro: { type: SchemaType.STRING },
-      },
-      required: ['subject', 'intro'],
-    }
-  )
+  const result = await callGeminiWithRetry<z.infer<typeof subjectSchema>>(prompt)
 
   return result
 }

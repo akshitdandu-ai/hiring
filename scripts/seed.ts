@@ -54,9 +54,11 @@ async function seed() {
 
     for (const statement of statements) {
       if (statement.trim()) {
-        await supabase.rpc('exec_sql', { sql: statement }).catch(() => {
+        try {
+          await supabase.rpc('exec_sql', { sql: statement })
+        } catch (err) {
           // Ignore errors for idempotent operations
-        })
+        }
       }
     }
     console.log('✓ Migrations complete\n')

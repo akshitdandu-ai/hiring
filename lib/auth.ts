@@ -13,20 +13,28 @@ function signToken(token: string): string {
 }
 
 export async function createSession(password: string): Promise<string | null> {
-  if (crypto.timingSafeEqual(Buffer.from(password), Buffer.from(env.ADMIN_PASSWORD))) {
-    const token = generateToken()
-    const signature = signToken(token)
-    const sessionValue = `${token}.${signature}`
+  const trimmedPassword = password.trim()
+  const trimmedEnvPassword = env.ADMIN_PASSWORD.trim()
 
-    const cookieStore = await cookies()
-    cookieStore.set(COOKIE_NAME, sessionValue, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24, // 24 hours
-    })
+  try {
+    if (crypto.timingSafeEqual(Buffer.from(trimmedPassword), Buffer.from(trimmedEnvPassword))) {
+      const token = generateToken()
+      const signature = signToken(token)
+      const sessionValue = `${token}.${signature}`
 
-    return sessionValue
+      const cookieStore = await cookies()
+      cookieStore.set(COOKIE_NAME, sessionValue, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24, // 24 hours
+      })
+
+      return sessionValue
+    }
+  } catch (error) {
+    // timingSafeEqual throws if buffers are different lengths
+    return null
   }
 
   return null

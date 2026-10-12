@@ -1,6 +1,6 @@
 import { supabase } from '../db'
 import { env } from '../env'
-import { sha256, normalizeUrl, normalizeTitle, titleSimilarity, getWeekKeyIST, nowIST } from '../utils'
+import { sha256, errorMessage, normalizeUrl, normalizeTitle, titleSimilarity, getWeekKeyIST, nowIST } from '../utils'
 import Parser from 'rss-parser'
 
 interface IngestResult {
@@ -275,7 +275,7 @@ export async function runIngest(): Promise<IngestResult> {
       finished_at: nowIST().toISOString(),
     })
   } catch (err) {
-    const error = err instanceof Error ? err.message : String(err)
+    const error = errorMessage(err)
     console.error('❌ Ingest failed:', error)
 
     await supabase.from('run_logs').insert({

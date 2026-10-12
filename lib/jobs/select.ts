@@ -1,5 +1,5 @@
 import { supabase } from '../db'
-import { nowIST, getWeekKeyIST } from '../utils'
+import { nowIST, errorMessage, getWeekKeyIST } from '../utils'
 import { selectArticles, generateCommentary, generateSubjectAndIntro } from '../gemini'
 
 interface SelectionResult {
@@ -285,7 +285,7 @@ export async function runSelection(force = false): Promise<SelectionResult> {
       theme: selection.issue_theme,
     }
   } catch (err) {
-    const error = err instanceof Error ? err.message : String(err)
+    const error = errorMessage(err)
     console.error('❌ Selection failed:', error)
 
     await supabase.from('run_logs').insert({

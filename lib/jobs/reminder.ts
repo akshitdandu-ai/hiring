@@ -1,5 +1,5 @@
 import { supabase } from '../db'
-import { nowIST, getWeekKeyIST } from '../utils'
+import { nowIST, errorMessage, getWeekKeyIST } from '../utils'
 import { sendTelegramMessage } from '../telegram'
 
 export async function runReminder(): Promise<{ ok: boolean; message: string }> {
@@ -41,14 +41,14 @@ export async function runReminder(): Promise<{ ok: boolean; message: string }> {
 
         return { ok: true, message: 'Reminder sent' }
       } catch (err) {
-        const error = err instanceof Error ? err.message : String(err)
+        const error = errorMessage(err)
         return { ok: false, message: `Failed to send reminder: ${error}` }
       }
     }
 
     return { ok: true, message: 'No reminder needed' }
   } catch (err) {
-    const error = err instanceof Error ? err.message : String(err)
+    const error = errorMessage(err)
     console.error('Reminder error:', error)
     return { ok: false, message: error }
   } finally {

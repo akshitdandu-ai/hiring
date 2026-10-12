@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifySession } from '@/lib/auth'
+import { errorMessage } from '@/lib/utils'
 import { runIngest } from '@/lib/jobs/ingest'
 import { runSelection } from '@/lib/jobs/select'
 import { runReminder } from '@/lib/jobs/reminder'
@@ -46,8 +47,8 @@ export async function POST(req: NextRequest, context: any) {
     console.error('Job error:', error)
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'Internal server error',
-        message: `Job failed: ${error instanceof Error ? error.message : String(error)}`,
+        error: errorMessage(error),
+        message: `Job failed: ${errorMessage(error)}`,
       },
       { status: 500 }
     )

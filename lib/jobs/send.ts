@@ -1,5 +1,5 @@
 import { supabase } from '../db'
-import { nowIST, getWeekKeyIST } from '../utils'
+import { nowIST, errorMessage, getWeekKeyIST } from '../utils'
 import { sendTelegramMessage } from '../telegram'
 import { sendEmails } from '../email'
 
@@ -72,7 +72,7 @@ export async function runSend(): Promise<{ ok: boolean; message: string; sent?: 
 
     return { ok: true, message: result.message, sent: result.sent }
   } catch (err) {
-    const error = err instanceof Error ? err.message : String(err)
+    const error = errorMessage(err)
     console.error('Send error:', error)
 
     await supabase.from('run_logs').insert({

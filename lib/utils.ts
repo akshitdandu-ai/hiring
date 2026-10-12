@@ -88,3 +88,18 @@ export function titleSimilarity(title1: string, title2: string): number {
   const norm2 = normalizeTitle(title2).split(/\s+/)
   return tokenSetJaccard(norm1, norm2)
 }
+
+export function errorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message
+  if (err && typeof err === 'object') {
+    const e = err as Record<string, unknown>
+    const parts = [e.message, e.code && `code ${e.code}`, e.details, e.hint].filter(Boolean)
+    if (parts.length > 0) return parts.join(' | ')
+    try {
+      return JSON.stringify(err)
+    } catch {
+      return 'Unknown error'
+    }
+  }
+  return String(err)
+}

@@ -107,7 +107,7 @@ export async function runSelection(force = false): Promise<SelectionResult> {
         .limit(150)
 
       if (!fallbackCandidates || fallbackCandidates.length === 0) {
-        throw new Error('No candidates found')
+        throw new Error('No articles to choose from yet. Run "Run Ingest Now" first and make sure it fetched articles.')
       }
 
       const seen = new Set(candidates.map((c: any) => c.id))

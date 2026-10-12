@@ -145,14 +145,23 @@ export async function runIngest(): Promise<IngestResult> {
     const weekKey = getWeekKeyIST()
     let processedCount = 0
 
+    const allHashes = items.map((item: any) => sha256(normalizeUrl(item.link)))
+    const existingHashes = new Set<string>()
+    for (let i = 0; i < allHashes.length; i += 200) {
+      const { data: found } = await supabase
+        .from('articles')
+        .select('url_hash')
+        .in('url_hash', allHashes.slice(i, i + 200))
+      found?.forEach((r: any) => existingHashes.add(r.url_hash))
+    }
+
     for (const item of items) {
+      if (!item.link || !item.title) continue
+
       const normalizedUrl = normalizeUrl(item.link)
       const urlHash = sha256(normalizedUrl)
 
-      // Check if already exists
-      const { data: existing } = await supabase.from('articles').select('id').eq('url_hash', urlHash).single()
-
-      if (existing) {
+      if (existingHashes.has(urlHash)) {
         result.duplicates++
         continue
       }
@@ -241,6 +250,7 @@ export async function runIngest(): Promise<IngestResult> {
       })
 
       if (!insertError) {
+        existingHashes.add(urlHash)
         result.inserted++
       } else {
         console.error('Insert error:', insertError)

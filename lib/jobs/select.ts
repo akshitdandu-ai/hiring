@@ -110,7 +110,8 @@ export async function runSelection(force = false): Promise<SelectionResult> {
         throw new Error('No candidates found')
       }
 
-      candidates.push(...fallbackCandidates)
+      const seen = new Set(candidates.map((c: any) => c.id))
+      candidates.push(...fallbackCandidates.filter((c: any) => !seen.has(c.id)))
     }
 
     console.log(`✓ Found ${candidates.length} candidate articles`)
@@ -163,6 +164,12 @@ export async function runSelection(force = false): Promise<SelectionResult> {
       })),
       lastHeadlines,
       styleGuide
+    )
+
+    const validIds = new Set(candidates.map((c: any) => c.id))
+    selection.picks = selection.picks.filter((p: any) => validIds.has(p.article_id))
+    selection.backups = selection.backups.filter(
+      (b: any) => validIds.has(b.article_id) && !selection.picks.some((p: any) => p.article_id === b.article_id)
     )
 
     // Validate and repair

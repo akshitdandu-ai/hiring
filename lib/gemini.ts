@@ -1,114 +1,246 @@
-import { config } from './config';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai'
+import { env } from './env'
+import { z } from 'zod'
 
-type Schema = Record<string, unknown>;
+const client = new GoogleGenerativeAI(env.GEMINI_API_KEY)
 
-/** kind: 'busy' = Google overloaded / rate-limited right now (retry later), 'quota' = daily free quota used up, 'fatal' = won't succeed on retry. */
-export class AIError extends Error {
-  kind: 'busy' | 'quota' | 'fatal';
-  constructor(message: string, kind: 'busy' | 'quota' | 'fatal' = 'fatal') {
-    super(message);
-    this.kind = kind;
-  }
-}
+const selectionSchema = z.object({
+  picks: z.array(
+    z.object({
+      article_id: z.string().uuid(),
+      topic: z.string(),
+      why_selected: z.string(),
+      signal_score: z.number().min(1).max(10),
+    })
+  ),
+  backups: z.array(
+    z.object({
+      article_id: z.string().uuid(),
+      topic: z.string(),
+      why_selected: z.string(),
+      rank: z.number().int().positive(),
+    })
+  ),
+  issue_theme: z.string(),
+})
 
-// Models whose daily quota ran out, remembered per server instance until the given time.
-const exhausted = new Map<string, number>();
+const commentarySchema = z.object({
+  items: z.array(
+    z.object({
+      article_id: z.string().uuid(),
+      commentary: z.string(),
+    })
+  ),
+})
 
-/**
- * Calls Gemini with a JSON response schema and returns the parsed object and the model used.
- * Tries each model in GEMINI_MODEL (comma-separated) in turn: a model that is overloaded (503) or
- * out of daily quota is skipped; a short per-minute limit is waited out. Everything happens within
- * `budgetMs` so a serverless call stays under its time limit.
- */
-export async function generateJSON<T>(opts: {
-  system: string;
-  prompt: string;
-  schema: Schema;
-  temperature?: number;
-  budgetMs?: number;
-}): Promise<{ data: T; model: string }> {
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) throw new AIError('GEMINI_API_KEY is not set');
-  const body = JSON.stringify({
-    systemInstruction: { parts: [{ text: opts.system }] },
-    contents: [{ role: 'user', parts: [{ text: opts.prompt }] }],
-    generationConfig: {
-      temperature: opts.temperature ?? 0,
-      responseMimeType: 'application/json',
-      responseSchema: opts.schema,
-    },
-  });
+const subjectSchema = z.object({
+  subject: z.string(),
+  intro: z.string(),
+})
 
-  const deadline = Date.now() + (opts.budgetMs ?? 50_000);
-  const errors: string[] = [];
-  for (let round = 0; round < 3 && Date.now() < deadline; round++) {
-    let shortestWait = Infinity;
-    for (const model of config.geminiModels) {
-      if ((exhausted.get(model) ?? 0) > Date.now()) continue;
-      if (Date.now() > deadline - 8_000) break;
-      const r = await callOnce(model, key, body, deadline);
-      if (r.ok) {
-        try {
-          return { data: JSON.parse(r.text) as T, model };
-        } catch {
-          errors.push(`${model}: invalid JSON`);
-          continue;
-        }
+async function callGeminiWithRetry<T>(
+  prompt: string,
+  schema?: any,
+  maxRetries = 3
+): Promise<T> {
+  let lastError: Error | null = null
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const model = client.getGenerativeModel({
+        model: env.GEMINI_MODEL,
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.9,
+          responseMimeType: schema ? 'application/json' : 'text/plain',
+          ...(schema && { responseSchema: schema }),
+        },
+      })
+
+      const result = await model.generateContent(prompt)
+      const text = result.response.text()
+
+      if (schema) {
+        return JSON.parse(text) as T
       }
-      errors.push(`${model}: ${r.error}`);
-      if (r.status === 429) {
-        if (/PerDay/i.test(r.raw)) exhausted.set(model, Date.now() + 60 * 60_000);
-        else shortestWait = Math.min(shortestWait, r.retryMs ?? 10_000);
-      } else if (r.status && r.status !== 503 && r.status < 500 && r.status !== 404) {
-        throw new AIError(`${model}: ${r.error}`, 'fatal'); // e.g. bad key or bad request - trying other models won't help
+      return text as T
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error))
+
+      // Check if it's a rate limit error
+      if (lastError.message.includes('429') || lastError.message.includes('too many')) {
+        const backoffMs = Math.pow(2, attempt) * 1000 + Math.random() * 1000
+        console.log(`Rate limited, waiting ${backoffMs}ms before retry...`)
+        await new Promise((resolve) => setTimeout(resolve, backoffMs))
+        continue
       }
+
+      // Don't retry on other errors
+      throw lastError
     }
-    // Every model is busy: wait for the soonest per-minute window, if it fits the budget.
-    const wait = Number.isFinite(shortestWait) ? shortestWait : 4_000 * (round + 1);
-    if (Date.now() + wait > deadline - 3_000) break;
-    await new Promise((res) => setTimeout(res, wait));
   }
-  const allDaily = config.geminiModels.every((m) => (exhausted.get(m) ?? 0) > Date.now());
-  if (allDaily) {
-    throw new AIError('Gemini free-tier daily quota is used up on every model. Try again later, or enable billing on the Gemini API key.', 'quota');
-  }
-  // Overloaded (503), rate-limited (429) or slow (timeouts): temporary, so the pipeline retries later.
-  throw new AIError(`Gemini is busy right now (${errors.slice(-2).join(' | ').slice(0, 300)})`, 'busy');
+
+  throw lastError || new Error('Failed to call Gemini after retries')
 }
 
-async function callOnce(model: string, key: string, body: string, deadline: number) {
-  const url = `${config.geminiApiBase}/v1beta/models/${model}:generateContent`;
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
-      body,
-      signal: AbortSignal.timeout(Math.max(8_000, Math.min(30_000, deadline - Date.now()))),
-    });
-  } catch (e) {
-    return { ok: false as const, status: 0, error: `network: ${(e as Error).message}`, raw: '' };
-  }
-  if (res.ok) {
-    const data = await res.json();
-    const text: string = (data?.candidates?.[0]?.content?.parts ?? [])
-      .map((p: { text?: string; thought?: boolean }) => (p.thought ? '' : p.text || ''))
-      .join('');
-    if (text) return { ok: true as const, text };
-    const why = data?.candidates?.[0]?.finishReason ?? data?.promptFeedback?.blockReason ?? 'unknown';
-    return { ok: false as const, status: 0, error: `empty response (${why})`, raw: '' };
-  }
-  const raw = await res.text();
-  let message = raw;
-  try {
-    message = JSON.parse(raw)?.error?.message ?? raw;
-  } catch {}
-  const retry = Number(raw.match(/"retryDelay":\s*"(\d+(?:\.\d+)?)s"/)?.[1]);
-  return {
-    ok: false as const,
-    status: res.status,
-    error: `${res.status} ${message.split('\n')[0].slice(0, 160)}`,
-    raw,
-    retryMs: Number.isFinite(retry) ? retry * 1000 + 500 : undefined,
-  };
+export async function selectArticles(
+  candidates: Array<{
+    id: string
+    title: string
+    source: string
+    published_at: string
+    topic: string
+    summary: string
+  }>,
+  lastHeadlines: string[],
+  styleGuide: string
+): Promise<{
+  picks: Array<{ article_id: string; topic: string; why_selected: string }>
+  backups: Array<{ article_id: string; topic: string; why_selected: string }>
+  issue_theme: string
+}> {
+  // Limit to 150 most recent candidates
+  const topCandidates = candidates.slice(0, 150)
+
+  const candidateList = topCandidates
+    .map(
+      (c) =>
+        `- ID: ${c.id}, Title: "${c.title}", Source: ${c.source}, Topic: ${c.topic}, Date: ${c.published_at}, Summary: ${c.summary.slice(0, 300)}`
+    )
+    .join('\n')
+
+  const lastHeadlinesText = lastHeadlines.length > 0 ? `Recent headlines to avoid re-covering:\n${lastHeadlines.join('\n')}\n\n` : ''
+
+  const styleGuideSnippet = styleGuide.slice(0, 500)
+
+  const prompt = `You are Shreya, a newsletter editor for The Dispatch. Your role is to select the 8-10 most compelling stories from this week's batch that are:
+- Counterintuitive or under-reported
+- Connect two or more trends
+- Contain substance (numbers, policy shifts, structural changes)
+- Not covered in the recent issues below
+- Collectively span at least 3 different topic areas
+
+${lastHeadlinesText}
+
+Your style guide priorities:
+${styleGuideSnippet}
+
+Candidate articles this week:
+${candidateList}
+
+Select 8-10 picks and provide 5 backups ranked by signal. Output JSON:
+{
+  "picks": [{"article_id": "uuid", "topic": "string", "why_selected": "one line", "signal_score": 1-10}],
+  "backups": [{"article_id": "uuid", "topic": "string", "why_selected": "string", "rank": 1}],
+  "issue_theme": "one line theme for this week"
+}`
+
+  const result = await callGeminiWithRetry<z.infer<typeof selectionSchema>>(prompt, {
+    type: SchemaType.OBJECT,
+    properties: {
+      picks: {
+        type: SchemaType.ARRAY,
+        items: {
+          type: SchemaType.OBJECT,
+          properties: {
+            article_id: { type: SchemaType.STRING },
+            topic: { type: SchemaType.STRING },
+            why_selected: { type: SchemaType.STRING },
+            signal_score: { type: SchemaType.NUMBER },
+          },
+          required: ['article_id', 'topic', 'why_selected', 'signal_score'],
+        },
+      },
+      backups: {
+        type: SchemaType.ARRAY,
+        items: {
+          type: SchemaType.OBJECT,
+          properties: {
+            article_id: { type: SchemaType.STRING },
+            topic: { type: SchemaType.STRING },
+            why_selected: { type: SchemaType.STRING },
+            rank: { type: SchemaType.NUMBER },
+          },
+          required: ['article_id', 'topic', 'why_selected', 'rank'],
+        },
+      },
+      issue_theme: { type: SchemaType.STRING },
+    },
+    required: ['picks', 'backups', 'issue_theme'],
+  })
+
+  return result
+}
+
+export async function generateCommentary(
+  articles: Array<{
+    id: string
+    title: string
+    source: string
+    summary: string
+  }>,
+  styleGuide: string
+): Promise<Array<{ article_id: string; commentary: string }>> {
+  const articlesText = articles
+    .map((a) => `ID: ${a.id}\nTitle: "${a.title}"\nSource: ${a.source}\nSummary: ${a.summary}\n---`)
+    .join('\n')
+
+  const prompt = `You are Shreya, editor of The Dispatch. Write 2-3 sentence commentary (max 65 words) for each article below, in your distinctive voice (sharp, skeptical but fair, data-first, plain English). Never restate the headline, never invent facts beyond what's in the summary.
+
+Your voice and approach:
+${styleGuide}
+
+Articles to comment on:
+${articlesText}
+
+Output JSON array with IDs and commentary.`
+
+  const result = await callGeminiWithRetry<z.infer<typeof commentarySchema>>(
+    prompt,
+    {
+      type: SchemaType.OBJECT,
+      properties: {
+        items: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              article_id: { type: SchemaType.STRING },
+              commentary: { type: SchemaType.STRING },
+            },
+            required: ['article_id', 'commentary'],
+          },
+        },
+      },
+      required: ['items'],
+    }
+  )
+
+  return result.items
+}
+
+export async function generateSubjectAndIntro(issueTheme: string, styleGuide: string): Promise<{ subject: string; intro: string }> {
+  const prompt = `You are Shreya, editor of The Dispatch. Generate:
+1. A subject line (≤60 chars) for an issue with theme: "${issueTheme}"
+2. A 1-2 sentence intro in your voice for the newsletter
+
+Style guide:
+${styleGuide}
+
+Output JSON: { "subject": "string", "intro": "string" }`
+
+  const result = await callGeminiWithRetry<z.infer<typeof subjectSchema>>(
+    prompt,
+    {
+      type: SchemaType.OBJECT,
+      properties: {
+        subject: { type: SchemaType.STRING },
+        intro: { type: SchemaType.STRING },
+      },
+      required: ['subject', 'intro'],
+    }
+  )
+
+  return result
 }

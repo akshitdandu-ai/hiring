@@ -1,8 +1,15 @@
-import type { NextConfig } from 'next';
+import type { NextConfig } from 'next'
 
-const nextConfig: NextConfig = {
-  // Keep the PDF / DOCX parsers as plain Node modules in the serverless bundle.
-  serverExternalPackages: ['unpdf', 'mammoth'],
-};
+const config: NextConfig = {
+  reactStrictMode: true,
+  experimental: {
+    serverActions: {
+      allowedOrigins: ['*'],
+    },
+  },
+  images: {
+    unoptimized: true,
+  },
+}
 
-export default nextConfig;
+export default config

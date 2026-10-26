@@ -739,7 +739,7 @@ function priorityFrom(text: string, awaiting: boolean): string | null {
 /** "Acme Ltd, 100 mugs at £5…": a company-looking name at the very start, before the first comma. */
 function leadingCompany(raw: string, booking: Booking): string | null {
   if (booking.sellerName) return null;
-  const m = /^\s*([A-Z][\w&'.\-]*(?:\s+(?:&|[A-Z0-9][\w&'.\-]*)){0,4})\s*[,:\-\u2013]\s+\S/.exec(raw.replace(/[\u2019\u2018]/g, "'"));
+  const m = /^\s*([A-Z][\w&'.\-]*(?:\s+(?:&|[A-Z0-9][\w&'.\-]*)){0,4})\s*[,:\-–]\s+\S/.exec(raw.replace(/[’‘]/g, "'"));
   if (!m) return null;
   const name = m[1].replace(/[,;:]+$/, '').trim();
   if (!/\b(?:Ltd\.?|Limited|Co\.?|Inc\.?|LLC|Plc|Corp\.?|Bros\.?|Group|Goods|Trading|Supplies|Imports|Exports|Wholesale|Studios?|Stores?|Shop|Foods|Crafts|Designs|Brands|Company)$/i.test(name)) return null;

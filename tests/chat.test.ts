@@ -168,6 +168,37 @@ describe('rule-based parser: first messages', () => {
   });
 });
 
+describe('rule-based parser: more natural phrasings', () => {
+  it('lbs, fulfilment centre, fastest', () => {
+    const r = ops("I need to send 5 pallets of t-shirts from Leeds to Rotterdam. Total weight about 1,200 lbs. It's for a fulfilment centre. We want the fastest option.", empty());
+    expect(r.ops).toContainEqual({ op: 'set', field: 'pallets', value: 5 });
+    expect(r.ops).toContainEqual({ op: 'set', field: 'grossWeightKg', value: 544.31 });
+    expect(r.ops).toContainEqual({ op: 'set', field: 'destinationType', value: 'Warehouse' });
+    expect(r.ops).toContainEqual({ op: 'set', field: 'priority', value: 'Fastest' });
+    expect(r.ops).toContainEqual({ op: 'add_item', item: { description: 't-shirts' } });
+  });
+  it('seller cue, total value, per-box packing', () => {
+    const r = ops('Hello! Seller is Acme Candles Ltd. We have 500 soy candles, 20 per box, worth £4,000 in total, going from Birmingham to Hamburg. Ready tomorrow.', empty());
+    expect(r.ops).toContainEqual({ op: 'set', field: 'sellerName', value: 'Acme Candles Ltd.' });
+    expect(r.ops).toContainEqual({ op: 'set', field: 'declaredValue', value: 4000 });
+    expect(r.ops).toContainEqual({ op: 'set', field: 'readyDate', value: '2026-10-27' });
+    expect(r.ops.find((o) => o.op === 'add_item')).toMatchObject({ item: { description: 'soy candles', quantity: 500, unitsPerCarton: 20 } });
+  });
+  it('item details with no item named never leak into booking-level fields', () => {
+    const r = ops("it's 12 boxes with 24 units each of scented candles, £6.50 per unit, 0.3 kg per candle, made in Vietnam, HS code 340490", empty());
+    expect(r.ops.some((o) => o.op === 'set' && (o.field === 'grossWeightKg' || o.field === 'declaredValue'))).toBe(false);
+    expect(r.ops.find((o) => o.op === 'add_item')).toMatchObject({ item: { description: 'scented candles', unitsPerCarton: 24, unitWeightKg: 0.3, unitPrice: 6.5, hsCode: '340490', countryOfOrigin: 'Vietnam' } });
+  });
+  it('two items with prices in brackets', () => {
+    const r = ops('shipping 200 hoodies (£25 each) and 300 beanies (£8 each) london to paris business address', empty());
+    const items = r.ops.filter((o) => o.op === 'add_item') as Array<{ item: Record<string, unknown> }>;
+    expect(items.map((i) => i.item)).toEqual([
+      { description: 'hoodies', quantity: 200, unitPrice: 25 },
+      { description: 'beanies', quantity: 300, unitPrice: 8 },
+    ]);
+  });
+});
+
 describe('LLM output validation', () => {
   it('accepts well-formed updates', () => {
     expect(parseExtraction({ updates: [{ op: 'set', field: 'pallets', value: 4 }, { op: 'increment', field: 'cartons', amount: 2 }] })).toHaveLength(2);

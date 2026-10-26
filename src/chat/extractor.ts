@@ -239,6 +239,18 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
     blank(m.index!, m[0].length);
   }
 
+  // "24 units each of scented candles": units per carton plus the product
+  const upcOf = new RegExp(String.raw`(?<![\w.£])(${NUM_SRC})\s*(?:units?|pcs\.?|pieces?)\s+(?:each|per\s+(?:box|carton)|in\s+each(?:\s+(?:box|carton))?)\s+of\s+(?:the\s+|my\s+|our\s+)?([A-Za-z][A-Za-z'\-]*(?:\s+[A-Za-z][A-Za-z'\-]*){0,3})`, 'i').exec(s);
+  if (upcOf) {
+    const desc = cleanDescription(upcOf[2].split(/\s+(?:at|for|from|to|with|and)\b/i)[0]);
+    if (desc && !NOT_ITEM.has(desc.split(' ')[0].toLowerCase())) {
+      const d = draftFor(desc);
+      setDesc(d, desc);
+      d.patch.unitsPerCarton = parseNum(upcOf[1]);
+      blank(upcOf.index, upcOf[0].length);
+    }
+  }
+
   // ---- 5. item anchors: "1080 ceramic mugs", "200 units of tote bags" ----
   const anchorRe = new RegExp(String.raw`(?<![\w£.\/-])(${NUM_SRC})(?![\d.:/-])\s+(?:x\s+)?([A-Za-z][A-Za-z0-9'\-]*(?:\s+[A-Za-z0-9'\-]+){0,5})`, 'g');
   const stopRe = /(?:[,;.()@=]|\s(?:at|for|priced|with|and|in|each|per|that|which|made|manufactured|to|from|ready|weigh|weighs|weighing|hs|sku|worth|costing|cost|are|is|using|via|by|on|packed|origin|sourced)\b|\s[£\d])/i;
@@ -326,7 +338,11 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
     }
     if (drafts.length) return drafts[drafts.length - 1];
     const it = booking.items.length === 1 ? booking.items[0] : booking.items[booking.items.length - 1];
-    return it ? draftFor(it.description || it.sku) : null;
+    if (it) return draftFor(it.description || it.sku);
+    // item details with no item named yet ("£6.50 per unit, 0.3 kg each"): start an item, its description is asked for next
+    const blank: Draft = { existing: null, description: '', patch: {}, start: -1, end: -1 };
+    drafts.push(blank);
+    return blank;
   };
   // "I want to ship some mugs to Germany": a description with no quantity
   if (!booking.items.length && !drafts.length) {
@@ -353,12 +369,12 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
 
   // ---- 6. weights ----
   const allWeights = findWeights(s);
-  const eachRe = /^\s*(?:each|per\s+(?:unit|piece|item|mug|box|carton)|apiece|a\s+piece|\/\s*(?:unit|piece))/i;
+  const eachRe = /^\s*(?:each|per\s+(?!pallet|skid|shipment|order|booking|carton|box)[a-z]+|apiece|a\s+piece|\/\s*(?:unit|piece))/i;
   const anyEach = allWeights.some((x) => eachRe.test(s.slice(x.index + x.length, x.index + x.length + 22)));
   for (const w of [...allWeights].reverse()) {
     const after = s.slice(w.index + w.length, w.index + w.length + 22);
     const before = s.slice(Math.max(0, w.index - 34), w.index);
-    const each = /^\s*(?:each|per\s+(?:unit|piece|item|mug|box|carton)|apiece|a\s+piece|\/\s*(?:unit|piece))/i.test(after) || /unit\s+weight\W*(?:is|of|:|=)?\s*$/i.test(before);
+    const each = eachRe.test(after) || /unit\s+weight\W*(?:is|of|:|=)?\s*$/i.test(before);
     const total = /\b(gross|total|altogether|in total|all in|whole|shipment|consignment|load|everything|overall|all-in)\b/i.test(before + ' ' + after);
     const seg = real.find((a) => w.index >= a.d.start && w.index < a.d.end);
     const refd = /\b(weigh|weighs|weighing|weight)\b/i.test(before) && itemsPool().some((p) => descTokens(p.description).some((t) => t.length > 2 && new RegExp(`\\b${t}`, 'i').test(before)));
@@ -378,7 +394,7 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
   for (const g of [...findGbp(s)].reverse()) {
     const after = s.slice(g.index + g.length, g.index + g.length + 24);
     const before = s.slice(Math.max(0, g.index - 30), g.index);
-    const eachCue = /^\s*(?:each|per\s+(?:unit|piece|item|mug|box)|apiece|a\s+(?:piece|unit)|\/\s*(?:unit|piece)|ea\b)/i.test(after) || /(?:@|\bat|unit\s+price(?:\s+(?:is|of))?|priced\s+at|costs?|costing|price(?:\s+is)?|selling\s+(?:at|for))\s*[:=]?\s*$/i.test(before);
+    const eachCue = /^\s*(?:each|per\s+(?!pallet|skid|shipment|order|booking|carton|box)[a-z]+|apiece|a\s+(?:piece|unit)|\/\s*(?:unit|piece)|ea\b)/i.test(after) || /(?:@|\bat|unit\s+price(?:\s+(?:is|of))?|priced\s+at|costs?|costing|price(?:\s+is)?|selling\s+(?:at|for))\s*[:=]?\s*$/i.test(before);
     const declaredCue = /\b(declared|total\s+value|worth|value\s+of|valued|goods\s+value|invoice|customs\s+value|total\s+cost|in\s+total|altogether|overall|value\s+is|value)\b/i.test(before + ' ' + after.slice(0, 14)) && !/unit\s+price/i.test(before);
     const seg = real.find((a) => g.index >= a.d.start && g.index < a.d.end);
     let target: 'declared' | 'unit';
@@ -420,7 +436,7 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
   // country of origin
   const cooRe = /\b(?:made|manufactured|produced|sourced|manufacture)\s+in\s+([A-Za-z][A-Za-z.\s]{1,22}?)(?=$|[,;.!?]|\s+(?:and|with|at|for|hs|then)\b)|\b(?:country\s+of\s+origin|origin)\s*(?:is|:|=)?\s*([A-Za-z][A-Za-z.\s]{1,22}?)(?=$|[,;.!?]|\s+(?:and|with|at|for|hs|then)\b)|\b(?:from|in)\s+(china|india|vietnam|turkey|türkiye|germany|uk|u\.k\.|prc)\b(?=\s*(?:$|[,;.!?]))/i;
   const cooM = cooRe.exec(s);
-  if (cooM && !awaitsBooking('originCity')) {
+  if (cooM) {
     const text = (cooM[1] ?? cooM[2] ?? cooM[3] ?? '').trim().replace(/^the\s+/i, '');
     const m = matchFixed(text, ITEM_COUNTRIES, COUNTRY_ALIASES);
     if (m) {
@@ -561,15 +577,18 @@ function priorityFrom(text: string, awaiting: boolean): string | null {
 const NAME_BAD = /^(?:shipping|sending|looking|trying|booking|going|ready|just|based|a|an|the|not|on|in|at|to|from|here|calling|writing|new|your)$/i;
 function sellerFrom(raw: string): string | null {
   const text = raw.replace(/[’‘]/g, "'");
-  const cap = String.raw`([A-Z][\w&'.\-]*(?:\s+(?:&|and|of|the|[A-Z0-9][\w&'.\-]*)){0,5})`;
+  const cap = String.raw`([A-Z][\w&'.\-]*(?:\s+(?:&|and|of|the|(?!I\b)[A-Z0-9][\w&'.\-]*)){0,5})`;
+  const ci = (w: string) => w.replace(/[a-z]/gi, (c) => `[${c.toLowerCase()}${c.toUpperCase()}]`);
+  const nounCue = ['seller', 'company', 'business', 'brand', 'shop', 'store', 'firm'].map(ci).join('|');
   const patterns = [
-    new RegExp(String.raw`\b(?:seller|company|business|brand|shop|store|firm)(?:\s+name)?\s*(?:is|:|=|called|named)\s+(?:the\s+)?${cap}`, 'i'),
-    new RegExp(String.raw`\b(?:my|our)\s+(?:company|business|brand|shop|store|firm)\s+(?:is\s+)?(?:called\s+|named\s+)?${cap}`, 'i'),
+    new RegExp(String.raw`\b(?:${nounCue})(?:\s+${ci('name')})?\s*(?:${ci('is')}|:|=|${ci('called')}|${ci('named')})\s+(?:${ci('the')}\s+)?${cap}`),
+    new RegExp(String.raw`\b(?:${ci('my')}|${ci('our')})\s+(?:${nounCue})\s+(?:${ci('is')}\s+)?(?:${ci('called')}\s+|${ci('named')}\s+)?${cap}`),
     new RegExp(String.raw`\b(?:[Ww]e're|[Ww]e\s+are|I'm|I\s+am|i'm|i\s+am)\s+(?:from|with|at)\s+${cap}`),
     new RegExp(String.raw`\b(?:[Ww]e're|[Ww]e\s+are)\s+${cap}`),
-    new RegExp(String.raw`\b(?:i|we)\s+(?:work|am working|are working)\s+(?:for|at|with)\s+${cap}`, 'i'),
-    new RegExp(String.raw`\bon\s+behalf\s+of\s+${cap}`, 'i'),
-    new RegExp(String.raw`\bthis\s+is\s+(?:[A-Z][a-z]+\s+(?:from|at|of)\s+)?${cap}\s+(?:here|speaking)`),
+    new RegExp(String.raw`\b[Ii]\s+(?:work|am working)\s+(?:for|at|with)\s+${cap}`),
+    new RegExp(String.raw`\b[Ww]e\s+(?:work|are working)\s+(?:for|at|with)\s+${cap}`),
+    new RegExp(String.raw`\b${ci('on')}\s+${ci('behalf')}\s+${ci('of')}\s+${cap}`),
+    new RegExp(String.raw`\b[Tt]his\s+is\s+(?:[A-Z][a-z]+\s+(?:from|at|of)\s+)?${cap}\s+(?:here|speaking)`),
   ];
   for (const re of patterns) {
     const m = re.exec(text);
@@ -582,9 +601,9 @@ function sellerFrom(raw: string): string | null {
     const kept: string[] = [];
     for (const t of toks) {
       kept.push(t);
-      if (/\.$/.test(t) && !/^(?:ltd|co|inc|llc|plc|bros|corp|sons|&)\.$/i.test(t)) break;
+      if (/\.$/.test(t)) break;
     }
-    name = kept.join(' ').replace(/[.,;:!]+$/, '').trim();
+    name = kept.join(' ').replace(/[,;:!]+$/, '').replace(/(?<!\bLtd|\bCo|\bInc|\bLLC|\bPlc|\bBros|\bCorp)\.$/, '').trim();
     if (!name || NAME_BAD.test(name.split(' ')[0])) continue;
     if (matchFixed(name, [...ORIGIN_CITIES, ...ALL_DESTINATION_CITIES])) continue;
     if (WEEKDAY_OR_MONTH.test(name.split(' ')[0])) continue;

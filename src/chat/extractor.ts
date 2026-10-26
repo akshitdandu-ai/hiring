@@ -1,5 +1,6 @@
 import { ALL_DESTINATION_CITIES, CITY_ALIASES, COUNTRY_ALIASES, DESTINATION_COUNTRIES, ITEM_COUNTRIES, ORIGIN_CITIES, UNSUPPORTED_PLACES } from '../config/allowedValues';
 import type { Booking, Item } from '../model/types';
+import { scanDangerous } from '../engine/rules/R06';
 import { matchFixed, norm } from '../util/text';
 import type { ItemFieldName, ItemPatch, Op, Slot } from './ops';
 import { convertNumberWords, expandK, findDate, findForeignMoney, findGbp, findWeights, NUM_SRC, parseNum } from './textUtils';
@@ -128,6 +129,11 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
   s = expandK(s);
   s = s.replace(/\banother\b/gi, '1 more').replace(/\b(?:an|a|one)\s+(?:extra|additional)\b/gi, '1 more');
   s = s.replace(/\b(?:an?)\s+(?=(?:more\s+)?(?:pallets?|skids?|cartons?|boxes|box)\b)/gi, '1 ');
+  // "mugs 100 at £5" reads like "100 mugs at £5"
+  s = s.replace(
+    /(?<![\w-])(?!(?:ship|shipping|send|sending|have|got|of|is|are|about|around|approx|approximately|total|value|worth|priced|cost|costs|price|only|just|at|for|x|and|with|per|each)\b)([A-Za-z][A-Za-z'-]*(?:\s+[A-Za-z][A-Za-z'-]*)?)\s+(\d[\d,]*)\s+(?:at|@|for|x)\s*(?=£)/gi,
+    (_m, noun: string, n: string) => `${n} ${noun} at `,
+  );
   const blank = (idx: number, len: number) => {
     s = s.slice(0, idx) + ' '.repeat(len) + s.slice(idx + len);
   };
@@ -206,7 +212,9 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
         }
       }
     }
-    blank(m.index!, m[0].length);
+    // the optional "of <words>" tail may run on into "from Birmingham": blank only up to where the product name ends
+    const rawCut = m[6] ? m[6].search(/\s+(?:at|for|from|to|with|and|,)\b/i) : -1;
+    blank(m.index!, m[0].length - (rawCut >= 0 ? m[6].length - rawCut : 0));
   }
   // ambiguous: "add 2", "remove 3"
   const amb = /\b(add|plus|remove|drop|take\s+off|minus|reduce(?:\s+by)?|increase(?:\s+by)?)\s+(\d+(?:\.\d+)?)(?!\s*(?:\d|[a-z%£]))/i.exec(s);
@@ -256,9 +264,12 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
   const stopRe = /(?:[,;.()@=]|\s(?:at|for|priced|with|and|in|each|per|that|which|made|manufactured|to|from|ready|weigh|weighs|weighing|hs|sku|worth|costing|cost|are|is|using|via|by|on|packed|origin|sourced)\b|\s[£\d])/i;
   type Anchor = { d: Draft; qty: number | null; start: number; end: number };
   const anchors: Anchor[] = [];
-  for (const m of [...s.matchAll(anchorRe)]) {
+  for (let m: RegExpExecArray | null; (m = anchorRe.exec(s)); ) {
     const rest = m[2];
     const cut = rest.search(stopRe);
+    // resume right after this item's description so "200 candles and 150 tote bags" yields both items
+    const used = m[0].length - rest.length + (cut >= 0 ? cut : rest.length);
+    anchorRe.lastIndex = m.index + Math.max(1, used);
     let desc = (cut >= 0 ? rest.slice(0, cut) : rest).trim();
     const lead = /^(units?|pcs\.?|pieces?|items?)\b\s*(of\s+)?/i.exec(desc);
     let hasUnits = false;
@@ -269,7 +280,9 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
     desc = cleanDescription(desc);
     const first = desc.split(' ')[0]?.toLowerCase() ?? '';
     const qty = parseNum(m[1]);
-    if (!desc || NOT_ITEM.has(first) || WEEKDAY_OR_MONTH.test(first)) {
+    // "20 tiles per carton" is packing, not a quantity
+    if (/^\s*(?:per|in\s+(?:a|each|every|one)|each\s+(?:in\s+)?)\s*(?:carton|box|ctn)|^\s*\/\s*(?:carton|box|ctn)/i.test(rest.slice(cut >= 0 ? cut : rest.length))) continue;
+    if (!desc || NOT_ITEM.has(first) || WEEKDAY_OR_MONTH.test(first) || /^(?:at|for|from|with|by|on|off|up|down)$/.test(first)) {
       // "1080 units" with no description: quantity of the current item
       if (hasUnits && !desc) anchors.push({ d: undefined as unknown as Draft, qty, start: m.index!, end: m.index! + m[0].length });
       continue;
@@ -390,6 +403,12 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
     blank(w.index, w.length);
   }
 
+  /** "totes £9", "candles are £4": an item's name sits right before the amount. */
+  const namedItemBefore = (pos: number): boolean => {
+    const m = /([A-Za-z][A-Za-z'\-]*)\s*(?:(?:are|is|at|cost|costs|priced\s+at|for|@|=|:)\s*)*$/i.exec(s.slice(Math.max(0, pos - 30), pos));
+    return !!m && !NOT_ITEM.has(m[1].toLowerCase()) && itemsPool().some((p) => sameProduct(p.description, m[1]));
+  };
+
   // ---- 7. money (GBP) ----
   for (const g of [...findGbp(s)].reverse()) {
     const after = s.slice(g.index + g.length, g.index + g.length + 24);
@@ -400,6 +419,7 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
     let target: 'declared' | 'unit';
     if (eachCue && !/\btotal\b/i.test(before)) target = 'unit';
     else if (declaredCue) target = 'declared';
+    else if (namedItemBefore(g.index)) target = 'unit';
     else if (seg && seg.d.patch.unitPrice === undefined) target = 'unit';
     else if (awaitsBooking('declaredValue')) target = 'declared';
     else if (awaits('unitPrice')) target = 'unit';
@@ -425,13 +445,14 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
     ex.hsUnknownFor = d?.description ?? booking.items[0]?.description ?? '';
   }
   // units per carton
-  const upcRe = new RegExp(String.raw`(?<![\w.])(${NUM_SRC})\s*(?:units?|pcs|pieces)?\s*(?:per|in\s+(?:a|each|every|one)|\/|a|each|to\s+a|to\s+each|inside\s+each)\s*(?:carton|box|ctn)s?\b`, 'i');
+  const upcRe = new RegExp(String.raw`(?<![\w.])(${NUM_SRC})\s*(?:units?|pcs|pieces|(?!(?:pallets?|skids?|cartons?|boxes|box|ctns?|kilos?|kgs?|lbs?|pounds?|tonnes?|grams?|gbp)\b)[A-Za-z]{3,15})?\s*(?:per|in\s+(?:a|each|every|one)|\/|a|each|to\s+a|to\s+each|inside\s+each)\s*(?:carton|box|ctn)s?\b`, 'i');
   const upcRe2 = new RegExp(String.raw`\b(?:cartons?|boxes|box)\s+(?:of|hold|holds|contain|contains)\s+(${NUM_SRC})\b`, 'i');
-  const upc = upcRe.exec(s) ?? upcRe2.exec(s);
-  if (upc) {
-    const d = currentDraft(upc.index);
+  const upcAll = [...s.matchAll(new RegExp(upcRe.source, 'gi'))];
+  const upcHits = upcAll.length ? upcAll : [upcRe2.exec(s)].filter((x): x is RegExpExecArray => !!x);
+  for (const upc of upcHits.reverse()) {
+    const d = currentDraft(upc.index!);
     if (d) d.patch.unitsPerCarton = parseNum(upc[1]);
-    blank(upc.index, upc[0].length);
+    blank(upc.index!, upc[0].length);
   }
   // country of origin
   const cooRe = /\b(?:made|manufactured|produced|sourced|manufacture)\s+in\s+([A-Za-z][A-Za-z.\s]{1,22}?)(?=$|[,;.!?]|\s+(?:and|with|at|for|hs|then)\b)|\b(?:country\s+of\s+origin|origin)\s*(?:is|:|=)?\s*([A-Za-z][A-Za-z.\s]{1,22}?)(?=$|[,;.!?]|\s+(?:and|with|at|for|hs|then)\b)|\b(?:from|in)\s+(china|india|vietnam|turkey|türkiye|germany|uk|u\.k\.|prc)\b(?=\s*(?:$|[,;.!?]))/i;
@@ -543,6 +564,21 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
 
   // ---- 10. bare answers to what we just asked ----
   bareAnswers(ex, s, ctx, drafts, currentDraft);
+
+  // restricted goods mentioned in passing ("chargers with lithium batteries") must reach rule R-06 even though the product name stops earlier
+  if (!ex.signals.question) {
+    const reds = scanDangerous(textRaw).filter((h) => h.severity === 'Red');
+    if (reds.length) {
+      const d = currentDraft(null);
+      const current = d ? (d.existing ? (d.patch.description ?? d.existing.description) : d.description) : '';
+      const missing = reds.filter((h) => !scanDangerous(`${current} ${d?.existing?.sku ?? ''}`).some((x) => x.label === h.label));
+      if (d && missing.length) {
+        const text = `${current}${current ? ' ' : ''}(${missing.map((h) => h.label).join(', ')})`.trim();
+        d.patch.description = text;
+        if (!d.existing) d.description = text;
+      }
+    }
+  }
 
   // ---- 11. turn drafts into ops ----
   for (const d of drafts) {

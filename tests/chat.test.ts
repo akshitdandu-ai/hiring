@@ -427,3 +427,35 @@ describe('conversation', () => {
     expect(JSON.stringify(st.messages.map((m) => m.questions))).not.toContain('appointment');
   });
 });
+
+describe('several products in one message', () => {
+  it('two items without prices, then per-item prices and packing by name (totes → tote bags)', () => {
+    let st = say(initialState(), "I need to send some stuff to France next week. It's about 200 candles and 150 tote bags");
+    expect(st.booking.items.map((i) => [i.description, i.quantity])).toEqual([['candles', 200], ['tote bags', 150]]);
+    st = say(st, 'Leeds to Lyon. Candles are £4 each, totes £9. Candles come 20 per box, totes 15 per box');
+    expect(st.booking.declaredValue).toBeNull();
+    expect(st.booking.items.map((i) => [i.unitPrice, i.unitsPerCarton])).toEqual([[4, 20], [9, 15]]);
+    expect(last(st).text).not.toContain('Using your latest value');
+  });
+});
+
+describe('more natural wording from sellers', () => {
+  it('product phrase does not swallow the origin; packing "N tiles per carton" is not a quantity', () => {
+    const r = ops("We're Delta Tiles. Shipping 10 pallets of ceramic tiles from Birmingham to Hamburg, 4000 tiles at £3 each, 20 tiles per carton, HS 690721, 1.2kg each, made in Turkey", empty());
+    expect(r.ops).toContainEqual({ op: 'set', field: 'originCity', value: 'Birmingham' });
+    expect(r.ops.find((o) => o.op === 'add_item')).toMatchObject({ item: { description: 'ceramic tiles', quantity: 4000, unitPrice: 3, unitsPerCarton: 20 } });
+  });
+  it('"mugs 100 at £5" is 100 mugs, not an item called "at"', () => {
+    const r = ops('mugs 100 at £5, 10 per carton', empty());
+    expect(r.ops.find((o) => o.op === 'add_item')).toMatchObject({ item: { description: 'mugs', quantity: 100, unitPrice: 5, unitsPerCarton: 10 } });
+  });
+  it('lithium batteries mentioned in passing reach the product description (so R-06 fires)', () => {
+    const r = ops('We want to move 500 phone chargers with lithium batteries from London to Paris', empty());
+    expect(JSON.stringify(r.ops.find((o) => o.op === 'add_item'))).toContain('lithium');
+    let st = say(initialState(), 'shipping 40 power banks');
+    st = say(st, 'they contain lithium batteries');
+    expect(st.booking.items[0].description).toContain('lithium');
+    const none = say(say(initialState(), 'shipping 40 toy cars'), 'no batteries, battery-free');
+    expect(none.booking.items[0].description).toBe('toy cars');
+  });
+});

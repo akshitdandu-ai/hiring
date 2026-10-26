@@ -184,7 +184,9 @@ export function step(state: ConversationState, userText: string, ex: Extracted, 
     const h = hsHint(ex.hsUnknownFor);
     lead.push(h ? `No problem. ${h[0].toUpperCase() + h.slice(1)}. The HS code stays missing until you give me one.` : 'No problem. The HS code stays missing until you give me one; you can look it up on the UK Trade Tariff.');
   }
-  const overwrote = changes.some((c) => c.kind === 'change') && ops.some((o) => o.op === 'set' || (o.op === 'update_item' && (o.mode ?? 'set') === 'set'));
+  // narrowing a country to a city ("France" → "Lyon, France") refines the booking rather than replacing a value
+  const narrowed = (c: { text: string }) => !before.destinationCity && c.text.startsWith('Destination:');
+  const overwrote = changes.some((c) => c.kind === 'change' && !narrowed(c)) && ops.some((o) => o.op === 'set' || (o.op === 'update_item' && (o.mode ?? 'set') === 'set'));
   if (overwrote) lead.push('Using your latest value.');
   if (calcApplied.length) lead.push('Confirmed.');
   out.notes = [...ex.notes, ...applied.notes];

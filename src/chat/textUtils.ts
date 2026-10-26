@@ -1,4 +1,4 @@
-import { addDays, addWeeks, format, getDay, startOfWeek } from 'date-fns';
+import { addDays, addMonths, addWeeks, endOfMonth, format, getDay, startOfMonth, startOfWeek } from 'date-fns';
 
 // ---------- number words ----------
 const ONES: Record<string, number> = {
@@ -214,6 +214,26 @@ export function findDate(text: string, today: Date): DateHit | null {
   if (m) return hit(addDays(today, 1), m);
   m = /\b(today|asap|straight away|right away)\b/i.exec(text);
   if (m && /today/i.test(m[1])) return hit(today, m);
+  m = /\bready\s+(?:now|immediately|straight\s+away|right\s+away|to\s+go)\b|\b(?:immediately|right\s+now)\b/i.exec(text);
+  if (m) return hit(today, m, 'now → today');
+  m = /\b(?:(?:at\s+)?the\s+)?end\s+of\s+(?:the\s+|this\s+)?month\b|\bmonth[-\s]end\b/i.exec(text);
+  if (m) return hit(endOfMonth(today), m, `${m[0].trim()} → ${format(endOfMonth(today), 'EEE d MMM yyyy')}`);
+  m = /\b(?:start|beginning)\s+of\s+next\s+month\b|\bnext\s+month\b/i.exec(text);
+  if (m) {
+    const d = startOfMonth(addMonths(today, 1));
+    return hit(d, m, `${m[0].trim()} → ${format(d, 'EEE d MMM yyyy')}`);
+  }
+  m = /\bend\s+of\s+(next|this|the)\s+week\b/i.exec(text);
+  if (m) {
+    const monday = addWeeks(startOfWeek(today, { weekStartsOn: 1 }), /next/i.test(m[1]) ? 1 : 0);
+    const d = addDays(monday, 4);
+    return hit(d, m, `${m[0].trim()} → ${format(d, 'EEE d MMM yyyy')}`);
+  }
+  m = /\bnext\s+week\b/i.exec(text);
+  if (m) {
+    const d = addWeeks(startOfWeek(today, { weekStartsOn: 1 }), 1);
+    return hit(d, m, `${m[0].trim()} → ${format(d, 'EEE d MMM yyyy')}`);
+  }
   m = /\bin\s+(\d+)\s+(day|days|week|weeks)\b/i.exec(text);
   if (m) return hit(addDays(today, /week/i.test(m[2]) ? +m[1] * 7 : +m[1]), m);
   m = new RegExp(String.raw`\b(?:(next|this|on|by|for)\s+)?(${dayNames})\b`, 'i').exec(text);

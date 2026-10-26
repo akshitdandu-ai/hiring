@@ -459,3 +459,117 @@ describe('more natural wording from sellers', () => {
     expect(none.booking.items[0].description).toBe('toy cars');
   });
 });
+
+describe('weak spots found by probing: referring back, targeted skips, per-pallet weights', () => {
+  const ask = (...lines: string[]) => say(initialState(), ...lines);
+  const items = (st: ConversationState) => st.booking.items.map((i) => ({ d: i.description, q: i.quantity, p: i.unitPrice, upc: i.unitsPerCarton, w: i.unitWeightKg }));
+
+  it('"about 300 of them, £6 each" updates the item we are discussing instead of adding one called "them"', () => {
+    const st = ask('I want to send candles to Germany', 'About 300 of them, £6 each');
+    expect(items(st)).toEqual([{ d: 'candles', q: 300, p: 6, upc: null, w: null }]);
+  });
+
+  it('"each weighs 2kg" is a unit weight, not the gross weight', () => {
+    const st = ask('ship 50 lamps to paris', 'each weighs 2kg');
+    expect(st.booking.items[0].unitWeightKg).toBe(2);
+    expect(st.booking.grossWeightKg).toBeNull();
+  });
+
+  it('per-pallet weights are multiplied out to the gross weight, with the sum shown', () => {
+    const a = ask('3 pallets of mugs from London to Berlin, each pallet weighs 400kg');
+    expect(a.booking.grossWeightKg).toBe(1200);
+    expect(last(a).notes?.join(' ')).toContain('Each pallet 400 kg × 3 pallets = 1,200 kg gross');
+    expect(ask('ship mugs to Paris, 2 pallets, about 350 kg per pallet').booking.grossWeightKg).toBe(700);
+    const noCount = ask('each pallet is 400 kg');
+    expect(noCount.booking.grossWeightKg).toBeNull();
+    expect(last(noCount).warnings?.join(' ')).toContain('number of pallets');
+  });
+
+  it('"I don\'t know" only skips the question it answers', () => {
+    let st = ask('We are Acme, 100 mugs at £5 from London to Berlin warehouse, 10 per carton, 10 cartons, HS 691200, 0.4kg each');
+    st = say(st, 'not sure on origin');
+    expect(st.deferred.some((k) => k.includes('countryOfOrigin'))).toBe(true);
+    expect(st.deferred.some((k) => k.includes('pallets'))).toBe(false);
+    expect(last(st).questions?.join(' ')).toContain('pallet');
+    // a bare "don't know" after several questions answers the first one only
+    const st2 = say(ask('Acme Ltd, 100 mugs at £5, from London to Berlin warehouse'), "don't know");
+    expect(st2.deferred).toHaveLength(0);
+    expect(st2.skips && Object.keys(st2.skips)).toHaveLength(1);
+  });
+
+  it('a company name leading the message is the seller; commands and keywords never are', () => {
+    expect(ask('Acme Ltd, 100 mugs at £5, from London to Berlin warehouse').booking.sellerName).toBe('Acme Ltd');
+    let st = ask('Acme Ltd, 100 mugs at £5, 10 per carton, 10 cartons, HS 691200, 0.4kg each, UK, London to Berlin warehouse, 2 pallets, 60kg, tomorrow, cheapest, appointment booked');
+    st = say(st, 'actually 150 mugs');
+    expect(st.booking.sellerName).toBe('Acme Ltd');
+    expect(st.booking.items[0].quantity).toBe(150);
+    expect(say(initialState(), 'ASAP').booking.sellerName).toBe('');
+    const places = say(say(initialState(), 'from our London warehouse to the Frankfurt depot'), 'collect in Bristol');
+    expect(places.booking.sellerName).toBe('');
+    const madrid = say(say(initialState(), 'We are Acme Ltd'), 'deliver to Madrid');
+    expect(madrid.booking.items).toHaveLength(0);
+  });
+
+  it('edits phrased as commands: price, cartons, quantity', () => {
+    let st = ask('Acme Ltd, 100 mugs at £5, 10 per carton, 10 cartons, HS 691200, 0.4kg each, UK, London to Berlin warehouse, 2 pallets, 60kg, tomorrow, cheapest, appointment booked');
+    st = say(st, 'change the price to £6');
+    expect(st.booking.items[0].unitPrice).toBe(6);
+    expect(st.booking.declaredValue).toBeNull();
+    st = say(st, 'change cartons to 12');
+    expect(st.booking.cartons).toBe(12);
+    st = say(st, 'change the quantity to 200');
+    expect(st.booking.items[0].quantity).toBe(200);
+    expect(ops('number of pallets is 4').ops).toContainEqual({ op: 'set', field: 'pallets', value: 4 });
+    expect(ops('pallets: 5').ops).toContainEqual({ op: 'set', field: 'pallets', value: 5 });
+  });
+
+  it('"20 cartons of 12 mugs each" is packing, and the units are worked out', () => {
+    const a = ops('20 cartons of 12 mugs each at £5', empty());
+    expect(a.ops).toContainEqual({ op: 'set', field: 'cartons', value: 20 });
+    expect(a.ops.find((o) => o.op === 'add_item')).toMatchObject({ item: { description: 'mugs', quantity: 240, unitsPerCarton: 12, unitPrice: 5 } });
+    expect(a.notes.join(' ')).toContain('20 cartons × 12 = 240');
+    const b = ops('240 mugs, in 20 cartons of 12', empty());
+    expect(b.ops.find((o) => o.op === 'add_item')).toMatchObject({ item: { description: 'mugs', quantity: 240, unitsPerCarton: 12 } });
+  });
+
+  it('money wording: "four pounds fifty", "£3,000 worth", thousands separators', () => {
+    expect(ops('Ship five hundred mugs at four pounds fifty each', empty()).ops.find((o) => o.op === 'add_item')).toMatchObject({ item: { quantity: 500, unitPrice: 4.5 } });
+    const v = ops('£3,000 worth of goods', empty());
+    expect(v.ops).toEqual([{ op: 'set', field: 'declaredValue', value: 3000 }]);
+    expect(ops('declared value 12,500', empty(), [{ scope: 'booking', field: 'declaredValue' }]).ops).toContainEqual({ op: 'set', field: 'declaredValue', value: 12500 });
+  });
+
+  it.each([
+    ['price matters most', 'Cheapest'],
+    ['keep costs low', 'Cheapest'],
+    ['speed is key', 'Fastest'],
+    ['as soon as possible', 'Fastest'],
+    ['I care most about reliability', 'Most reliable'],
+    ['I just want the best all-round option', 'Balanced'],
+  ])('priority wording: %s', (text, value) => expect(ops(text, empty()).ops).toContainEqual({ op: 'set', field: 'priority', value }));
+
+  it('looser dates: now, end of the month, next week, next month', () => {
+    expect(findDate('ready now', TODAY)?.iso).toBe('2026-10-26');
+    expect(findDate('end of the month', TODAY)?.iso).toBe('2026-10-31');
+    expect(findDate('next week', TODAY)?.iso).toBe('2026-11-02');
+    expect(findDate('end of next week', TODAY)?.iso).toBe('2026-11-06');
+    expect(findDate('next month', TODAY)?.iso).toBe('2026-11-01');
+  });
+
+  it('a date that belongs to the delivery appointment is not the ready date', () => {
+    const a = ops('actually the slot is booked for Friday', empty());
+    expect(a.ops.some((o) => o.op === 'set' && o.field === 'readyDate')).toBe(false);
+    expect(a.ops).toContainEqual({ op: 'set', field: 'appointmentBooked', value: true });
+    expect(ops('5th Nov, appointment booked', empty()).ops).toContainEqual({ op: 'set', field: 'readyDate', value: '2026-11-05' });
+  });
+});
+
+describe('labelled values without a unit', () => {
+  it('"the declared value is 5400" and "gross weight is 620" are understood (kg assumed and said)', () => {
+    expect(ops('the declared value is 5400', empty()).ops).toContainEqual({ op: 'set', field: 'declaredValue', value: 5400 });
+    const w = ops('gross weight is 620', empty());
+    expect(w.ops).toContainEqual({ op: 'set', field: 'grossWeightKg', value: 620 });
+    expect(w.notes.join(' ')).toContain('Took 620 as kilograms');
+    expect(ops('weight is 620 lbs', empty()).ops).toContainEqual({ op: 'set', field: 'grossWeightKg', value: 281.23 });
+  });
+});

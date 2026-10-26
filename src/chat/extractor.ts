@@ -54,6 +54,38 @@ export function detectSignals(raw: string): Signals {
   return sig;
 }
 
+/**
+ * Which of the questions we just asked an "I don't know" answers. "not sure on origin" means the country of
+ * origin only; a bare "don't know" means the first thing we asked, never everything at once.
+ */
+export function skipTargets(text: string, awaiting: Slot[]): Slot[] {
+  const t = text.toLowerCase();
+  const topics: Array<[RegExp, (s: Slot) => boolean]> = [
+    [/\b(origin|made in|manufactur|produced|sourced)\b/, (s) => s.field === 'countryOfOrigin'],
+    [/\b(hs|h\.s|tariff|commodity)\b|\bcode\b/, (s) => s.field === 'hsCode'],
+    [/\b(each|per unit|per item|individual|unit weight)\b/, (s) => s.field === 'unitWeightKg'],
+    [/\b(weigh|weight|kg|kilos?)\b/, (s) => s.field === 'grossWeightKg' || s.field === 'unitWeightKg'],
+    [/\b(pallets?|skids?)\b/, (s) => s.field === 'pallets'],
+    [/\b(per (?:carton|box)|packing|packed)\b/, (s) => s.field === 'unitsPerCarton'],
+    [/\b(cartons?|boxes)\b/, (s) => s.field === 'cartons'],
+    [/\b(price|cost)\b/, (s) => s.field === 'unitPrice'],
+    [/\b(value|worth|declared)\b/, (s) => s.field === 'declaredValue'],
+    [/\b(quantity|how many|units)\b/, (s) => s.field === 'quantity'],
+    [/\b(name|company|seller|business)\b/, (s) => s.field === 'sellerName'],
+    [/\b(date|ready|when)\b/, (s) => s.field === 'readyDate'],
+    [/\b(appointment|slot)\b/, (s) => s.field === 'appointmentBooked'],
+  ];
+  let named = false;
+  for (const [re, pick] of topics) {
+    if (!re.test(t)) continue;
+    named = true;
+    const hit = awaiting.filter(pick);
+    if (hit.length) return hit;
+  }
+  if (named) return [];
+  return awaiting.slice(0, 1);
+}
+
 // ---------- item helpers ----------
 const STOP_DESC = new Set(['the', 'a', 'an', 'of', 'some', 'my', 'our', 'these', 'those', 'new', 'same', 'extra', 'more', 'other', 'another']);
 const NOT_ITEM = new Set([
@@ -129,6 +161,10 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
   s = expandK(s);
   s = s.replace(/\banother\b/gi, '1 more').replace(/\b(?:an|a|one)\s+(?:extra|additional)\b/gi, '1 more');
   s = s.replace(/\b(?:an?)\s+(?=(?:more\s+)?(?:pallets?|skids?|cartons?|boxes|box)\b)/gi, '1 ');
+  // "four pounds fifty" → £4.50 (not a weight, not a count of something else)
+  s = s.replace(/\b(\d+)\s*(?:pounds?|quid)\s+(\d{1,2})\b(?!\s*(?:kg|kgs|kilos?|lbs?|units?|pallets?|cartons?|boxes|pcs|%|per\s+(?:carton|box|pallet)))/gi, (_m, p: string, c: string) => `£${p}.${c.padStart(2, '0')}`);
+  // "about 300 of them" is a quantity of the item we are already talking about
+  s = s.replace(/(\d[\d,]*)\s+of\s+(?:them|these|those|it)\b/gi, '$1 units');
   // "mugs 100 at £5" reads like "100 mugs at £5"
   s = s.replace(
     /(?<![\w-])(?!(?:ship|shipping|send|sending|have|got|of|is|are|about|around|approx|approximately|total|value|worth|priced|cost|costs|price|only|just|at|for|x|and|with|per|each)\b)([A-Za-z][A-Za-z'-]*(?:\s+[A-Za-z][A-Za-z'-]*)?)\s+(\d[\d,]*)\s+(?:at|@|for|x)\s*(?=£)/gi,
@@ -150,7 +186,11 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
   }
 
   // ---- 2. date ----
-  const date = findDate(s, today);
+  let date = findDate(s, today);
+  if (date && /\b(?:appointment|slot)\b[^,.;]{0,30}\b(?:for|on|at)\s+(?:the\s+)?[^,.;]*$/i.test(s.slice(Math.max(0, date.index - 45), date.index + date.length))) {
+    ex.notes.push('I did not use that date because it looks like the delivery appointment day. Say "ready on <date>" if it is the day the goods are ready.');
+    date = null;
+  }
   if (date) {
     ex.ops.push({ op: 'set', field: 'readyDate', value: date.iso });
     if (/→/.test(date.explain)) ex.notes.push(`Read "${date.explain}"`);
@@ -177,14 +217,36 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
     else if (desc.length > d.existing.description.length && sameProduct(desc, d.existing.description)) d.patch.description = desc;
   };
 
+  // ---- 3a. "change cartons to 12", "pallets: 4", "number of pallets is 4" ----
+  const setCountRe = new RegExp(
+    String.raw`\b(?:(?:change|set|make|update|amend|edit|correct)\s+)?(?:the\s+)?(?:(?:number|count|total)\s+of\s+)?(pallets?|skids?|cartons?|boxes)(?:\s+(?:count|total|number))?\s*(?:to|=|:|as|is|are|should\s+be)\s*(${NUM_SRC})\b(?!\s*(?:per|each|kg|kgs|kilos?|lbs?|units?|pcs|x\b|[£%]|of\b))`,
+    'i',
+  );
+  const setCount = setCountRe.exec(s);
+  if (setCount) {
+    ex.ops.push({ op: 'set', field: /^(pallet|skid)/i.test(setCount[1]) ? 'pallets' : 'cartons', value: parseNum(setCount[2]) });
+    blank(setCount.index, setCount[0].length);
+  }
+  // "change the quantity to 200" (one item) or "change the quantity of the mugs to 200"
+  const setQtyRe = new RegExp(String.raw`\b(?:change|set|make|update|amend|edit|correct)\s+(?:the\s+)?(?:quantity|qty|number\s+of\s+units)(?:\s+of\s+(?:the\s+)?([A-Za-z][A-Za-z'\-]*(?:\s+[A-Za-z][A-Za-z'\-]*){0,3}?))?\s*(?:to|=|as)\s*(${NUM_SRC})\b`, 'i');
+  const setQ = setQtyRe.exec(s);
+  if (setQ) {
+    const target = setQ[1] ? resolveItem(booking.items, setQ[1]) : booking.items.length === 1 ? booking.items[0] : null;
+    if (target) {
+      ex.ops.push({ op: 'update_item', match: target.sku, field: 'quantity', value: parseNum(setQ[2]), mode: 'set' });
+      blank(setQ.index, setQ[0].length);
+    }
+  }
+
   // ---- 3. pallets / cartons ----
   const UNIT = String.raw`(?:pallets?|skids?|plts?|cartons?|ctns?|boxes|box)`;
   const verbRe = new RegExp(
-    String.raw`(?:\b(add|plus|remove|drop|delete|take\s+off|take\s+away|minus|reduce(?:\s+by)?|decrease(?:\s+by)?|increase(?:\s+by)?|cut(?:\s+by)?|bump(?:\s+up)?(?:\s+by)?|up\s+by)\s+)?(?<![\w.£])(${NUM_SRC})\s*(more\s+|extra\s+|additional\s+|fewer\s+|less\s+)?(${UNIT})\b(\s+of\s+(?:the\s+)?([A-Za-z][A-Za-z'\-]*(?:\s+[A-Za-z][A-Za-z'\-]*){0,3}))?`,
+    String.raw`(?:\b(add|plus|remove|drop|delete|take\s+off|take\s+away|minus|reduce(?:\s+by)?|decrease(?:\s+by)?|increase(?:\s+by)?|cut(?:\s+by)?|bump(?:\s+up)?(?:\s+by)?|up\s+by)\s+)?(?<![\w.£])(?<!\d,)(${NUM_SRC})\s*(more\s+|extra\s+|additional\s+|fewer\s+|less\s+)?(${UNIT})\b(\s+of\s+(?:the\s+)?([A-Za-z][A-Za-z'\-]*(?:\s+[A-Za-z][A-Za-z'\-]*){0,3}))?`,
     'gi',
   );
   const unitField = (u: string): 'pallets' | 'cartons' => (/^(pallet|skid|plt)/i.test(u) ? 'pallets' : 'cartons');
   const countMatches = [...s.matchAll(verbRe)];
+  const upcLater: Array<{ upc: number; cartons: number }> = [];
   for (const m of countMatches.reverse()) {
     const unitWord = m[4];
     // "cartons of 12" = units per carton, not a carton count
@@ -196,6 +258,25 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
     const dec = /remove|drop|delete|take|minus|reduce|decrease|cut/.test(verb) || mod === 'fewer' || mod === 'less';
     const inc = /add|plus|increase|bump|up/.test(verb) || mod === 'more' || mod === 'extra' || mod === 'additional';
     const desc = m[6] ? cleanDescription(m[6].split(/\s+(?:at|for|from|to|with|and|,)\b/i)[0]) : '';
+    // "20 cartons of 12 mugs each": 12 is the packing, the units are 20 × 12
+    const tailM =
+      field === 'cartons' && !desc
+        ? new RegExp(String.raw`^\s*(?:of|with|containing|holding)\s+(${NUM_SRC})(?!\d)(?!\s*(?:kg|kgs|kilos?|lbs?|£|%|pallets?|cartons?|boxes))(?!\s*(?:units?|pcs|pieces)\s+(?:each|per\s+(?:carton|box)|in\s+each)\s+of\b)\s*(?:units?|pcs|pieces)?\s*(?:each\s+|per\s+(?:carton|box)\s+)?([A-Za-z][A-Za-z'\-]*(?:\s+[A-Za-z][A-Za-z'\-]*){0,1})?`, 'i').exec(s.slice(m.index! + m[0].length))
+        : null;
+    if (tailM) {
+      const per = parseNum(tailM[1]);
+      const tailDesc = tailM[2] ? cleanDescription(tailM[2].split(/\s+(?:each|at|for|from|to|with|and|in)\b/i)[0]) : '';
+      ex.ops.push({ op: 'set', field: 'cartons', value: amount });
+      if (tailDesc && !NOT_ITEM.has(tailDesc.split(' ')[0].toLowerCase()) && !WEEKDAY_OR_MONTH.test(tailDesc.split(' ')[0])) {
+        const d = draftFor(tailDesc);
+        setDesc(d, tailDesc);
+        d.patch.unitsPerCarton = per;
+        d.patch.quantity = amount * per;
+        ex.notes.push(`Worked out ${amount} cartons × ${per} = ${(amount * per).toLocaleString('en-GB')} units of ${tailDesc}.`);
+      } else upcLater.push({ upc: per, cartons: amount });
+      blank(m.index!, m[0].length + tailM[0].length);
+      continue;
+    }
     if (field === 'cartons' && desc) {
       // "90 cartons of mugs": cartons belong to that item
       const d = draftFor(desc);
@@ -248,7 +329,7 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
   }
 
   // "24 units each of scented candles": units per carton plus the product
-  const upcOf = new RegExp(String.raw`(?<![\w.£])(${NUM_SRC})\s*(?:units?|pcs\.?|pieces?)\s+(?:each|per\s+(?:box|carton)|in\s+each(?:\s+(?:box|carton))?)\s+of\s+(?:the\s+|my\s+|our\s+)?([A-Za-z][A-Za-z'\-]*(?:\s+[A-Za-z][A-Za-z'\-]*){0,3})`, 'i').exec(s);
+  const upcOf = new RegExp(String.raw`(?<![\w.£])(?<!\d,)(${NUM_SRC})\s*(?:units?|pcs\.?|pieces?)\s+(?:each|per\s+(?:box|carton)|in\s+each(?:\s+(?:box|carton))?)\s+of\s+(?:the\s+|my\s+|our\s+)?([A-Za-z][A-Za-z'\-]*(?:\s+[A-Za-z][A-Za-z'\-]*){0,3})`, 'i').exec(s);
   if (upcOf) {
     const desc = cleanDescription(upcOf[2].split(/\s+(?:at|for|from|to|with|and)\b/i)[0]);
     if (desc && !NOT_ITEM.has(desc.split(' ')[0].toLowerCase())) {
@@ -260,7 +341,7 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
   }
 
   // ---- 5. item anchors: "1080 ceramic mugs", "200 units of tote bags" ----
-  const anchorRe = new RegExp(String.raw`(?<![\w£.\/-])(${NUM_SRC})(?![\d.:/-])\s+(?:x\s+)?([A-Za-z][A-Za-z0-9'\-]*(?:\s+[A-Za-z0-9'\-]+){0,5})`, 'g');
+  const anchorRe = new RegExp(String.raw`(?<![\w£.\/-])(?<!\d,)(${NUM_SRC})(?![\d.:/-])\s+(?:x\s+)?([A-Za-z][A-Za-z0-9'\-]*(?:\s+[A-Za-z0-9'\-]+){0,5})`, 'g');
   const stopRe = /(?:[,;.()@=]|\s(?:at|for|priced|with|and|in|each|per|that|which|made|manufactured|to|from|ready|weigh|weighs|weighing|hs|sku|worth|costing|cost|are|is|using|via|by|on|packed|origin|sourced)\b|\s[£\d])/i;
   type Anchor = { d: Draft; qty: number | null; start: number; end: number };
   const anchors: Anchor[] = [];
@@ -380,6 +461,16 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
     }
   }
 
+  for (const u of upcLater) {
+    const d = currentDraft(null);
+    if (!d) continue;
+    if (d.patch.unitsPerCarton === undefined) d.patch.unitsPerCarton = u.upc;
+    if (d.patch.quantity === undefined && !d.existing?.quantity) {
+      d.patch.quantity = u.cartons * u.upc;
+      ex.notes.push(`Worked out ${u.cartons} cartons × ${u.upc} = ${(u.cartons * u.upc).toLocaleString('en-GB')} units.`);
+    }
+  }
+
   // ---- 6. weights ----
   const allWeights = findWeights(s);
   const eachRe = /^\s*(?:each|per\s+(?!pallet|skid|shipment|order|booking|carton|box)[a-z]+|apiece|a\s+piece|\/\s*(?:unit|piece))/i;
@@ -387,7 +478,24 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
   for (const w of [...allWeights].reverse()) {
     const after = s.slice(w.index + w.length, w.index + w.length + 22);
     const before = s.slice(Math.max(0, w.index - 34), w.index);
-    const each = eachRe.test(after) || /unit\s+weight\W*(?:is|of|:|=)?\s*$/i.test(before);
+    // "each pallet weighs 400kg", "350 kg per pallet": a per-pallet figure, multiplied out to the gross weight
+    const perPallet =
+      /\b(?:each|per|every)\s+(?:pallet|skid)s?\b[^,.;\d]{0,24}$/i.test(before) ||
+      /^\s*(?:per|each|a|every)\s+(?:pallet|skid)\b/i.test(after) ||
+      /\b(?:pallets?|skids?)\s+(?:each\s+)?(?:weighs?|weigh|weighing|come\s+to|comes\s+to)\b[^,.;\d]{0,12}$/i.test(before);
+    if (perPallet) {
+      const setPallets = [...ex.ops].reverse().find((o) => o.op === 'set' && o.field === 'pallets') as { value: number } | undefined;
+      const count = setPallets?.value ?? booking.pallets;
+      if (count && count > 0) {
+        const gross = Math.round(w.kg * count * 100) / 100;
+        ex.ops.push({ op: 'set', field: 'grossWeightKg', value: gross });
+        if (w.note) ex.notes.push(`Converted ${w.note}`);
+        ex.notes.push(`Each pallet ${w.kg} kg × ${count} pallet${count === 1 ? '' : 's'} = ${gross.toLocaleString('en-GB')} kg gross.`);
+      } else ex.warnings.push(`I need the number of pallets to turn ${w.kg} kg per pallet into a total gross weight. How many pallets?`);
+      blank(w.index, w.length);
+      continue;
+    }
+    const each = eachRe.test(after) || /unit\s+weight\W*(?:is|of|:|=)?\s*$/i.test(before) || /\b(?:each|every|one)\b[^,.;]{0,24}\b(?:weighs?|weighing|weight)\b[^,.;\d]{0,8}$/i.test(before);
     const total = /\b(gross|total|altogether|in total|all in|whole|shipment|consignment|load|everything|overall|all-in)\b/i.test(before + ' ' + after);
     const seg = real.find((a) => w.index >= a.d.start && w.index < a.d.end);
     const refd = /\b(weigh|weighs|weighing|weight)\b/i.test(before) && itemsPool().some((p) => descTokens(p.description).some((t) => t.length > 2 && new RegExp(`\\b${t}`, 'i').test(before)));
@@ -413,7 +521,7 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
   for (const g of [...findGbp(s)].reverse()) {
     const after = s.slice(g.index + g.length, g.index + g.length + 24);
     const before = s.slice(Math.max(0, g.index - 30), g.index);
-    const eachCue = /^\s*(?:each|per\s+(?!pallet|skid|shipment|order|booking|carton|box)[a-z]+|apiece|a\s+(?:piece|unit)|\/\s*(?:unit|piece)|ea\b)/i.test(after) || /(?:@|\bat|unit\s+price(?:\s+(?:is|of))?|priced\s+at|costs?|costing|price(?:\s+is)?|selling\s+(?:at|for))\s*[:=]?\s*$/i.test(before);
+    const eachCue = /^\s*(?:each|per\s+(?!pallet|skid|shipment|order|booking|carton|box)[a-z]+|apiece|a\s+(?:piece|unit)|\/\s*(?:unit|piece)|ea\b)/i.test(after) || /(?:@|\bat|unit\s+price(?:\s+(?:is|of|to))?|priced\s+at|costs?(?:\s+(?:is|to))?|costing|price(?:\s+(?:is|to|of|at))?|selling\s+(?:at|for))\s*[:=]?\s*$/i.test(before);
     const declaredCue = /\b(declared|total\s+value|worth|value\s+of|valued|goods\s+value|invoice|customs\s+value|total\s+cost|in\s+total|altogether|overall|value\s+is|value)\b/i.test(before + ' ' + after.slice(0, 14)) && !/unit\s+price/i.test(before);
     const seg = real.find((a) => g.index >= a.d.start && g.index < a.d.end);
     let target: 'declared' | 'unit';
@@ -432,6 +540,24 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
     blank(g.index, g.length);
   }
 
+  // a value or weight stated with a label but no currency / unit: "declared value is 5400", "weight 620"
+  if (!ex.ops.some((o) => o.op === 'set' && o.field === 'declaredValue')) {
+    const v = new RegExp(String.raw`\b(?:declared\s+value|total\s+value|goods\s+value|invoice\s+(?:value|total)|customs\s+value|value|worth)\s*(?:is|of|=|:|to|at)?\s*(?:about|around|approximately|approx\.?|roughly)?\s*(${NUM_SRC})(?![\d,.]*\s*(?:kg|kgs|kilos?|lbs?|pallets?|cartons?|boxes|units?|pcs|%|x\b|per\b|each\b))`, 'i').exec(s);
+    if (v) {
+      ex.ops.push({ op: 'set', field: 'declaredValue', value: parseNum(v[1]) });
+      blank(v.index, v[0].length);
+    }
+  }
+  if (!ex.ops.some((o) => o.op === 'set' && o.field === 'grossWeightKg')) {
+    const gw = new RegExp(String.raw`\b(?:gross\s+weight|total\s+weight|weight)\s*(?:is|of|=|:|to|at)?\s*(?:about|around|approximately|approx\.?|roughly)?\s*(${NUM_SRC})(?![\d,.]*\s*(?:kg|kgs|kilos?|lbs?|tonnes?|g\b|each\b|per\b|£|%|pallets?|cartons?|units?))`, 'i').exec(s);
+    if (gw) {
+      const kg = parseNum(gw[1]);
+      ex.ops.push({ op: 'set', field: 'grossWeightKg', value: kg });
+      ex.notes.push(`Took ${kg.toLocaleString('en-GB')} as kilograms.`);
+      blank(gw.index, gw[0].length);
+    }
+  }
+
   // ---- 8. other item attributes ----
   // HS code
   const hsRe = /\b(?:hs|h\.s\.|hts|commodity|tariff)(?:\s*code)?(?:\s+for\s+(?:the\s+|my\s+)?([A-Za-z][A-Za-z0-9'\-]*(?:\s+[A-Za-z0-9'\-]+){0,3}?))?\s*(?:is|of|=|:|-|number|no\.?)?\s*([0-9][0-9 .\-]{3,14}[0-9])/i;
@@ -445,7 +571,7 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
     ex.hsUnknownFor = d?.description ?? booking.items[0]?.description ?? '';
   }
   // units per carton
-  const upcRe = new RegExp(String.raw`(?<![\w.])(${NUM_SRC})\s*(?:units?|pcs|pieces|(?!(?:pallets?|skids?|cartons?|boxes|box|ctns?|kilos?|kgs?|lbs?|pounds?|tonnes?|grams?|gbp)\b)[A-Za-z]{3,15})?\s*(?:per|in\s+(?:a|each|every|one)|\/|a|each|to\s+a|to\s+each|inside\s+each)\s*(?:carton|box|ctn)s?\b`, 'i');
+  const upcRe = new RegExp(String.raw`(?<![\w.])(?<!\d,)(${NUM_SRC})\s*(?:units?|pcs|pieces|(?!(?:pallets?|skids?|cartons?|boxes|box|ctns?|kilos?|kgs?|lbs?|pounds?|tonnes?|grams?|gbp)\b)[A-Za-z]{3,15})?\s*(?:per|in\s+(?:a|each|every|one)|\/|a|each|to\s+a|to\s+each|inside\s+each)\s*(?:carton|box|ctn)s?\b`, 'i');
   const upcRe2 = new RegExp(String.raw`\b(?:cartons?|boxes|box)\s+(?:of|hold|holds|contain|contains)\s+(${NUM_SRC})\b`, 'i');
   const upcAll = [...s.matchAll(new RegExp(upcRe.source, 'gi'))];
   const upcHits = upcAll.length ? upcAll : [upcRe2.exec(s)].filter((x): x is RegExpExecArray => !!x);
@@ -559,7 +685,7 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
   const pr = priorityFrom(words, awaitsBooking('priority'));
   if (pr) ex.ops.push({ op: 'set', field: 'priority', value: pr });
   // seller name
-  const seller = sellerFrom(textRaw);
+  const seller = sellerFrom(textRaw) ?? leadingCompany(textRaw, booking);
   if (seller) ex.ops.push({ op: 'set', field: 'sellerName', value: seller });
 
   // ---- 10. bare answers to what we just asked ----
@@ -597,10 +723,10 @@ export function ruleExtract(textRaw: string, ctx: ParseContext): Extracted {
 function priorityFrom(text: string, awaiting: boolean): string | null {
   const t = text.toLowerCase();
   const strong: Array<[RegExp, string]> = [
-    [/\b(cheapest|cheaper|cheap(?:ly)?|lowest\s+(?:cost|price)|least\s+expensive|budget|save\s+money|lowest\s+price)\b/, 'Cheapest'],
-    [/\b(fastest|quickest|as\s+fast\s+as\s+possible|speed\s+(?:matters|is\s+key|is\s+most)|urgent(?:ly)?|asap|express|quick(?:ly)?|soonest)\b/, 'Fastest'],
+    [/\b(cheapest|cheaper|cheap(?:ly)?|lowest\s+(?:cost|price)|least\s+expensive|budget|save\s+money|lowest\s+price|(?:price|cost)\s+(?:matters|is\s+(?:key|most|what\s+matters|the\s+priority))|keep\s+(?:it|costs?)\s+(?:low|down))\b/, 'Cheapest'],
+    [/\b(fastest|quickest|as\s+fast\s+as\s+possible|speed\s+(?:matters|is\s+key|is\s+most)|urgent(?:ly)?|asap|express|quick(?:ly)?|soonest|as\s+soon\s+as\s+possible|time[-\s]?critical|speed\s+is\s+(?:key|critical)|in\s+a\s+hurry|rush)\b/, 'Fastest'],
     [/\b(most\s+reliable|reliab(?:le|ility)|on[-\s]?time|dependab(?:le|ility)|never\s+late)\b/, 'Most reliable'],
-    [/\b(balanced|balance|no\s+(?:strong\s+)?preference|don'?t\s+mind|do\s+not\s+mind|best\s+trade-?off|a\s+mix|bit\s+of\s+everything|middle\s+ground|whatever|either\s+is\s+fine)\b/, 'Balanced'],
+    [/\b(balanced|balance|no\s+(?:strong\s+)?preference|don'?t\s+mind|do\s+not\s+mind|best\s+trade-?off|a\s+mix|bit\s+of\s+everything|middle\s+ground|whatever|either\s+is\s+fine|all[-\s]?round|best\s+overall|overall\s+best|good\s+mix|compromise|bit\s+of\s+both)\b/, 'Balanced'],
   ];
   for (const [re, v] of strong) if (re.test(t)) return v;
   if (awaiting) {
@@ -609,6 +735,20 @@ function priorityFrom(text: string, awaiting: boolean): string | null {
   }
   return null;
 }
+
+/** "Acme Ltd, 100 mugs at £5…": a company-looking name at the very start, before the first comma. */
+function leadingCompany(raw: string, booking: Booking): string | null {
+  if (booking.sellerName) return null;
+  const m = /^\s*([A-Z][\w&'.\-]*(?:\s+(?:&|[A-Z0-9][\w&'.\-]*)){0,4})\s*[,:\-\u2013]\s+\S/.exec(raw.replace(/[\u2019\u2018]/g, "'"));
+  if (!m) return null;
+  const name = m[1].replace(/[,;:]+$/, '').trim();
+  if (!/\b(?:Ltd\.?|Limited|Co\.?|Inc\.?|LLC|Plc|Corp\.?|Bros\.?|Group|Goods|Trading|Supplies|Imports|Exports|Wholesale|Studios?|Stores?|Shop|Foods|Crafts|Designs|Brands|Company)$/i.test(name)) return null;
+  if (matchFixed(name, [...ORIGIN_CITIES, ...ALL_DESTINATION_CITIES])) return null;
+  return name;
+}
+
+/** Words and phrases that are answers to other questions, never a company name. */
+const NOT_A_NAME = /^(?:ASAP|URGENT|OK|N\/?A|NA|FBA|ETA|UK|TBC|TBD|NOW|TODAY|NEXT|MORE|YES|NO|(?:collect|collection|deliver|delivery|ship|shipping|send|sending|pick|picking|going|from|to|in|at|on|by|for|with|it|that|this|actually|make|change|set|add|remove|drop|now|also|please|sorry|okay|hmm|um|well|so|maybe|what|how|why|can|could)\b.*)$/i;
 
 const NAME_BAD = /^(?:shipping|sending|looking|trying|booking|going|ready|just|based|a|an|the|not|on|in|at|to|from|here|calling|writing|new|your)$/i;
 function sellerFrom(raw: string): string | null {
@@ -673,14 +813,16 @@ function bareAnswers(
   if (sellerAwaited && !hasSet('sellerName') && !ex.signals.skip && awaiting.length > 1) {
     // "Northfield Goods, collecting from Manchester…": a leading capitalised phrase before the first comma
     const lead = /^\s*(?:it'?s\s+|we are\s+|we're\s+)?([A-Z][\w&'.\-]*(?:\s+(?:&|and|of|the|[A-Z0-9][\w&'.\-]*)){0,4})\s*(?:,|;|$)/.exec(ctx.rawText ?? '');
-    if (lead && !matchFixed(lead[1], [...ORIGIN_CITIES, ...ALL_DESTINATION_CITIES, ...DESTINATION_COUNTRIES], { ...CITY_ALIASES, ...COUNTRY_ALIASES }) && !WEEKDAY_OR_MONTH.test(lead[1]) && !/^(?:yes|no|hi|hello|hey|thanks|ok|okay|cheapest|fastest|balanced|warehouse|business)\b/i.test(lead[1])) {
+    const notAName = (x: string) => NOT_A_NAME.test(x) || priorityFrom(x, false) !== null || findDate(x, ctx.today) !== null;
+    if (lead && !notAName(lead[1]) && !matchFixed(lead[1], [...ORIGIN_CITIES, ...ALL_DESTINATION_CITIES, ...DESTINATION_COUNTRIES], { ...CITY_ALIASES, ...COUNTRY_ALIASES }) && !WEEKDAY_OR_MONTH.test(lead[1]) && !/^(?:yes|no|hi|hello|hey|thanks|ok|okay|cheapest|fastest|balanced|warehouse|business)\b/i.test(lead[1])) {
       ex.ops.push({ op: 'set', field: 'sellerName', value: lead[1].trim() });
     }
   }
   if (sellerAwaited && !hasSet('sellerName') && !ex.signals.skip) {
     const onlyThis = awaiting.length === 1;
     const candidate = plain.replace(/^(?:it'?s|its|it is|we are|we're|i am|i'm|this is|my (?:company|business) is|seller(?: name)? is|called|name is|the name is)\s+/i, '').trim();
-    if (onlyThis && candidate && candidate.length <= 60 && !/\d{3,}/.test(candidate) && !ex.ops.length && !ex.signals.yes && !ex.signals.no) {
+    const looksLikeCommand = NOT_A_NAME.test(candidate) || ex.warnings.length > 0 || priorityFrom(candidate, false) !== null || findDate(candidate, ctx.today) !== null;
+    if (onlyThis && candidate && candidate.length <= 60 && !/\d/.test(candidate) && !looksLikeCommand && !drafts.length && !ex.ops.length && !ex.signals.yes && !ex.signals.no && !ex.signals.question && !ex.signals.ambiguous) {
       ex.ops.push({ op: 'set', field: 'sellerName', value: candidate.replace(/\s+/g, ' ') });
     }
   }
@@ -721,7 +863,7 @@ function bareAnswers(
   const newItem = awaiting.some((a) => a.scope === 'item' && a.sku === '*new*' && a.field === 'description');
   if (newItem && !drafts.length && !ex.signals.skip && plain && !ex.signals.yes && !ex.signals.no && !ex.signals.undo && !ex.signals.startOver && !ex.signals.runChecks) {
     const rest = plain.replace(/^(?:i(?:'m| am)?\s+(?:selling|shipping|sending)|we(?:'re| are)?\s+(?:selling|shipping|sending)|it'?s|its|they(?:'re| are)|some|my|our)\s+/i, '');
-    if (rest.length <= 80 && /[A-Za-z]{3}/.test(rest) && !ex.ops.some((o) => o.op === 'set' && ['pallets', 'cartons'].includes(o.field))) {
+    if (rest.length <= 80 && /[A-Za-z]{3}/.test(rest) && !NOT_A_NAME.test(rest) && !ex.warnings.length && !ex.ops.some((o) => o.op === 'set' && ['pallets', 'cartons'].includes(o.field))) {
       const d: Draft = { existing: null, description: cleanDescription(rest), patch: {}, start: -1, end: -1 };
       d.patch.description = d.description;
       drafts.push(d);

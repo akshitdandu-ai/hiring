@@ -3,7 +3,7 @@ import { describeResultChange, evaluateBooking } from '../engine/evaluateBooking
 import type { Booking, BookingResult, BookingStatus } from '../model/types';
 import { gbp } from '../util/format';
 import { applyOps, type ChangeLine, describeBookingDiff } from './changeDetector';
-import { detectSignals, type Extracted, resolveItem, ruleExtract } from './extractor';
+import { detectSignals, type Extracted, resolveItem, ruleExtract, skipTargets } from './extractor';
 import type { Op, Slot } from './ops';
 import { slotKey } from './ops';
 import { calcProposalFor, type CalcProposal, planNext } from './questionPlanner';
@@ -197,7 +197,7 @@ export function step(state: ConversationState, userText: string, ex: Extracted, 
     const skips = { ...st.skips };
     const deferred = new Set(st.deferred);
     const offered: CalcProposal[] = [];
-    for (const slot of st.awaiting) {
+    for (const slot of skipTargets(userText, st.awaiting)) {
       if (!isMissing(st.booking, slot)) continue;
       const key = slotKey(slot);
       const calc = calcProposalFor(st.booking, slot);

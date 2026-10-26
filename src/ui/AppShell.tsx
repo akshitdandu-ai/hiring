@@ -98,7 +98,7 @@ export default function AppShell() {
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <div className="min-w-0">
             <p className="text-lg font-bold leading-tight" data-testid="team-name">
-              {TEAM_NAME} <span className="font-normal text-indigo-200">· {PAIR_LABEL}</span>
+              {TEAM_NAME}{PAIR_LABEL ? <span className="font-normal text-indigo-200"> · {PAIR_LABEL}</span> : null}
             </p>
             <p className="text-xs text-indigo-200">
               <span aria-hidden="true">✈ </span>

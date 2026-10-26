@@ -1,7 +1,101 @@
 @import 'tailwindcss';
 
+/*
+ * Cinematic luxury minimalist theme.
+ * The existing components use Tailwind's slate / red / amber / emerald / sky / violet / indigo utilities, so the
+ * scales are remapped here to a dark palette instead of rewriting every component. Status colours stay red /
+ * amber / green so meaning never depends on the brand palette.
+ */
+@theme {
+  --font-display: 'Syne', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Sora', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+
+  --color-ground: #0a0c0e;
+  --color-groundSec: #0e1114;
+  --color-panel: #101418;
+  --color-ink: #ede7dc;
+  --color-amber: #e8913c;
+  --color-teal: #2e6b72;
+  --color-tealLight: #6fb6bf;
+  --color-hairline: rgba(237, 231, 220, 0.13);
+
+  --tracking-wide-label: 0.15em;
+  --ease-reveal: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* neutrals: light-on-dark */
+  --color-slate-50: #12161a;
+  --color-slate-100: #181d22;
+  --color-slate-200: #262b30;
+  --color-slate-300: #3a4046;
+  --color-slate-400: #7a8086;
+  --color-slate-500: #a3a29c;
+  --color-slate-600: #bcb8ae;
+  --color-slate-700: #d3cec3;
+  --color-slate-800: #e3ddd0;
+  --color-slate-900: #ede7dc;
+  --color-slate-950: #f6f1e7;
+
+  /* red (blocked / red severity) */
+  --color-red-50: #2a1414;
+  --color-red-100: #3a1a1a;
+  --color-red-200: #5a2a2a;
+  --color-red-300: #8a3b3b;
+  --color-red-700: #b42318;
+  --color-red-800: #f2aaa1;
+  --color-red-900: #f7c4be;
+  --color-red-950: #fcdcd8;
+
+  /* amber (needs attention / amber severity) */
+  --color-amber-50: #2b1e0f;
+  --color-amber-100: #3a280f;
+  --color-amber-200: #5b3e15;
+  --color-amber-300: #8f5f1d;
+  --color-amber-600: #b45309;
+  --color-amber-800: #f2bb78;
+  --color-amber-900: #f6cc92;
+  --color-amber-950: #f9e0bb;
+
+  /* emerald (ready) */
+  --color-emerald-50: #0e241e;
+  --color-emerald-100: #12332a;
+  --color-emerald-200: #1d4a3d;
+  --color-emerald-300: #2e7160;
+  --color-emerald-800: #86d9ba;
+  --color-emerald-900: #a8e6cd;
+  --color-emerald-950: #c8f1df;
+
+  /* sky (info / filled) */
+  --color-sky-50: #0f2230;
+  --color-sky-200: #1e4560;
+  --color-sky-300: #2f6a8c;
+  --color-sky-700: #1f5f85;
+  --color-sky-900: #b7ddf3;
+
+  /* violet (calculated) */
+  --color-violet-50: #1e1830;
+  --color-violet-300: #5a4a92;
+  --color-violet-900: #d6ccf6;
+
+  /* indigo → the teal accent (assistant bubble tints, links, progress) */
+  --color-indigo-50: #0f2528;
+  --color-indigo-200: #2a5a60;
+  --color-indigo-300: #2e6b72;
+  --color-indigo-500: #4d98a1;
+  --color-indigo-600: #2e6b72;
+  --color-indigo-700: #2e6b72;
+  --color-indigo-800: #8fd0d8;
+  --color-indigo-900: #bfe6ea;
+  --color-indigo-950: #d8f0f2;
+}
+
 :root {
-  color-scheme: light;
+  color-scheme: dark;
+  --ease-reveal: cubic-bezier(0.16, 1, 0.3, 1);
+}
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 66px;
 }
 html,
 body,
@@ -10,10 +104,24 @@ body,
 }
 body {
   margin: 0;
-  background: #f4f6fa;
-  color: #0f172a;
-  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: #0a0c0e;
+  color: #ede7dc;
+  font-family: 'Sora', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 400;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+h1,
+h2,
+h3,
+h4 {
+  font-family: 'Syne', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+strong,
+b {
+  font-weight: 600;
 }
 button {
   cursor: pointer;
@@ -22,9 +130,132 @@ button:disabled {
   cursor: not-allowed;
 }
 :focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: 2px solid #e8913c;
   outline-offset: 2px;
 }
+::selection {
+  background: rgba(232, 145, 60, 0.35);
+}
+
+/* components still written for a white surface */
+.bg-white {
+  background-color: var(--color-panel);
+}
+.bg-white\/70 {
+  background-color: rgba(237, 231, 220, 0.08);
+}
+input,
+textarea,
+select {
+  color: inherit;
+}
+input::placeholder,
+textarea::placeholder {
+  color: rgba(237, 231, 220, 0.45);
+}
+
+/* shared editorial pieces */
+.label {
+  font-size: 10.5px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.hairline {
+  border-color: rgba(237, 231, 220, 0.13);
+}
+.reveal {
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+.duotone {
+  isolation: isolate;
+}
+.duotone::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(45deg, #2e6b72, #e8913c);
+  mix-blend-mode: overlay;
+  opacity: 0.85;
+  transition: opacity 500ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.outline-number {
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(237, 231, 220, 0.55);
+}
+img,
+svg.cover {
+  object-fit: cover;
+  object-position: center center;
+}
+
+/* nav links */
+.nav-link {
+  font-size: 10.5px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: rgba(237, 231, 220, 0.75);
+  transition: color 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  background: none;
+  border: 0;
+  padding: 0.5rem 0;
+}
+.nav-link:hover,
+.nav-link:focus-visible {
+  color: #e8913c;
+}
+
+/* roster (the ten checks) */
+.roster-item .roster-num,
+.roster-item .roster-thumb {
+  opacity: 0;
+  transform: translateX(-12px);
+  transition: opacity 500ms cubic-bezier(0.16, 1, 0.3, 1), transform 500ms cubic-bezier(0.16, 1, 0.3, 1), filter 500ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.roster-item .roster-thumb {
+  filter: grayscale(1);
+}
+.roster-item .roster-title {
+  transition: color 500ms cubic-bezier(0.16, 1, 0.3, 1), transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.roster-item:hover .roster-num,
+.roster-item:focus-within .roster-num,
+.roster-item:hover .roster-thumb,
+.roster-item:focus-within .roster-thumb {
+  opacity: 1;
+  transform: none;
+}
+.roster-item:hover .roster-thumb,
+.roster-item:focus-within .roster-thumb {
+  filter: grayscale(0);
+}
+.roster-item:hover .roster-title,
+.roster-item:focus-within .roster-title {
+  color: #e8913c;
+  transform: translateX(6px);
+}
+@media (hover: none) {
+  .roster-item .roster-num,
+  .roster-item .roster-thumb {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+/* card deck */
+.deck-card {
+  touch-action: pan-y;
+  user-select: none;
+  cursor: grab;
+}
+.deck-card:active {
+  cursor: grabbing;
+}
+
 @keyframes pf-dot {
   0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
   40% { opacity: 1; transform: translateY(-2px); }
@@ -33,5 +264,10 @@ button:disabled {
   animation: pf-dot 1.2s infinite ease-in-out;
 }
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
   .pf-dot { animation: none; }
+  .roster-item .roster-num,
+  .roster-item .roster-thumb,
+  .roster-item .roster-title,
+  .duotone::after { transition: none; }
 }

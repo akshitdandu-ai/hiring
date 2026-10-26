@@ -14,7 +14,7 @@ export const SEVERITY_STYLE = {
   Info: { card: 'border-sky-200 bg-sky-50', chip: 'bg-sky-700 text-white', icon: 'i', label: 'Info' },
 } as const;
 
-export const card = 'rounded-xl border border-slate-200 bg-white shadow-sm';
+export const card = 'rounded-xl border border-hairline bg-panel';
 export const btn = 'inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2';
-export const btnPrimary = `${btn} bg-indigo-700 text-white hover:bg-indigo-800 disabled:bg-slate-300`;
-export const btnGhost = `${btn} border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 disabled:text-slate-400`;
+export const btnPrimary = `${btn} bg-amber text-ground hover:bg-amber/90 disabled:bg-slate-300 disabled:text-slate-500`;
+export const btnGhost = `${btn} border border-hairline bg-transparent text-ink hover:border-amber hover:text-amber disabled:text-slate-400`;

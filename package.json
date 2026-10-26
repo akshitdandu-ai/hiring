@@ -1,33 +1,31 @@
 {
-  "name": "kargo-hiring",
-  "version": "1.0.0",
+  "name": "pre-flight",
   "private": true,
+  "version": "1.0.0",
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "rubric": "node scripts/build-rubric.mjs",
-    "typecheck": "tsc --noEmit",
-    "test": "node --test --experimental-strip-types tests/*.test.ts",
-    "prebuild": "node scripts/build-rubric.mjs",
-    "db:setup": "node scripts/db-setup.mjs"
-  },
-  "engines": {
-    "node": ">=20"
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "mammoth": "^1.13.0",
-    "next": "^16.3.6",
-    "postgres": "^3.4.9",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
-    "unpdf": "^1.8.1"
+    "date-fns": "^4.4.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "xlsx": "^0.18.5",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@types/node": "^26.6.3",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "typescript": "^7.0.2"
-  },
-  "type": "module"
+    "@vitejs/plugin-react": "^6.1.2",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  }
 }

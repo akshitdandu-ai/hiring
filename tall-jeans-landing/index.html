@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>[BRAND NAME] – Jeans for tall men | Not baggy. Not short. Built tall.</title>
+<meta name="description" content="Jeans re-cut for tall frames. Longer rise, lower knee, 34&quot; to 38&quot; inseams. Reserve your pair from the first batch for a fully refundable ₹500.">
+<meta name="theme-color" content="#1C1C1A">
+<link rel="canonical" href="https://[DOMAIN]/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="[BRAND NAME] – Not baggy. Not short. Built tall.">
+<meta property="og:description" content="Jeans re-cut for tall men. Reserve your pair for a fully refundable ₹500.">
+<meta property="og:url" content="https://[DOMAIN]/">
+<meta property="og:image" content="https://[DOMAIN]/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%231C1C1A'/%3E%3Crect x='11' y='3' width='10' height='26' fill='%23EF9F27'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#1C1C1A; --bg2:#262623; --fg:#F4F1EA; --muted:#AAA79D; --line:#3D3D38;
+  --amber:#EF9F27; --err:#FF8F80;
+  --display:'Anton','Impact','Arial Narrow Bold',sans-serif;
+  --body:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 17px/1.55 var(--body);-webkit-font-smoothing:antialiased}
+img,svg{display:block;max-width:100%}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--amber);outline-offset:3px}
+.wrap{width:100%;max-width:1120px;margin:0 auto;padding:0 20px}
+section{scroll-margin-top:60px}
+.sec{padding:clamp(56px,10vw,112px) 0;border-top:1px solid var(--line)}
+
+/* type */
+h1,h2,h3{font-family:var(--display);font-weight:400;text-transform:uppercase;line-height:.95;letter-spacing:.005em;margin:0}
+h1{font-size:clamp(52px,15vw,92px)}
+h2{font-size:clamp(38px,10vw,76px);margin-bottom:20px}
+h3{font-size:clamp(26px,6vw,34px);line-height:1}
+em{font-style:normal;color:var(--amber)}
+.eyebrow{font-weight:800;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin:0 0 18px}
+.lede{font-size:clamp(18px,4.4vw,22px);color:var(--fg);max-width:34em;margin:0 0 20px}
+.muted{color:var(--muted)}
+.small{font-size:14px;line-height:1.5}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:0 26px;background:var(--amber);color:#1C1C1A;border:2px solid var(--amber);border-radius:0;font:800 15px/1.1 var(--body);letter-spacing:.06em;text-transform:uppercase;text-decoration:none;cursor:pointer;text-align:center;transition:background .12s,color .12s}
+.btn:hover{background:transparent;color:var(--amber)}
+.btn[disabled]{opacity:.6;cursor:wait}
+.btn-sm{min-height:44px;padding:0 14px;font-size:13px}
+.btn-block{width:100%}
+.btn-ghost{background:transparent;color:var(--fg);border-color:var(--fg)}
+.btn-ghost:hover{background:var(--fg);color:var(--bg)}
+.linkbtn{background:none;border:0;border-bottom:2px solid var(--muted);color:var(--fg);font:600 15px var(--body);min-height:44px;padding:0 2px;cursor:pointer}
+.linkbtn:hover{border-color:var(--amber);color:var(--amber)}
+.linkbtn[disabled]{opacity:.6;cursor:wait}
+
+/* topbar */
+.bar{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.brand{font-family:var(--display);font-size:26px;text-transform:uppercase;letter-spacing:.02em;text-decoration:none;line-height:1}
+
+/* photo placeholders */
+.ph{display:flex;align-items:center;justify-content:center;text-align:center;padding:16px;background:var(--bg2);border:2px dashed #5A5A53;color:var(--muted);font-weight:600;font-size:13px;letter-spacing:.08em;text-transform:uppercase;line-height:1.4;width:100%}
+.r45{aspect-ratio:4/5}.r34{aspect-ratio:3/4}.r43{aspect-ratio:4/3}.r169{aspect-ratio:16/9}
+
+/* hero */
+.hero{padding:clamp(36px,7vw,80px) 0 clamp(48px,8vw,96px)}
+.hero-grid{display:grid;gap:36px}
+.hero p.lede{margin-top:22px}
+.cta-note{margin:14px 0 0;color:var(--muted);font-size:14px}
+@media(min-width:860px){.hero-grid{grid-template-columns:1.15fr .85fr;align-items:center;gap:64px}.hero .btn{width:auto}}
+.hero .btn{width:100%}
+@media(min-width:860px){.hero .btn{width:auto;padding:0 36px}}
+
+/* ticker */
+.ticker{background:var(--amber);color:#1C1C1A;overflow:hidden;white-space:nowrap;border-block:2px solid #1C1C1A}
+.ticker-track{display:inline-flex;animation:tick 30s linear infinite}
+.ticker span{font-family:var(--display);font-size:clamp(20px,5vw,30px);text-transform:uppercase;letter-spacing:.02em;padding:11px 0 9px 28px}
+.ticker span::after{content:"";display:inline-block;width:10px;height:10px;background:#1C1C1A;margin-left:28px}
+@keyframes tick{to{transform:translateX(-50%)}}
+
+/* problem */
+.cards{display:grid;gap:16px;margin-top:32px}
+.card{background:var(--bg2);border:1px solid var(--line);padding:24px}
+.card svg{width:56px;height:56px;margin-bottom:18px;color:var(--fg)}
+.card h3{margin-bottom:10px}
+.card p{margin:0;color:var(--muted)}
+.ba{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:32px}
+.ba figure{margin:0}
+.ba figcaption{font-family:var(--display);font-size:22px;text-transform:uppercase;margin-top:8px}
+@media(min-width:760px){.cards{grid-template-columns:repeat(3,1fr)}.ba{gap:20px}}
+
+/* difference */
+.diff{display:grid;gap:0;margin-top:28px;border-top:1px solid var(--line)}
+.diff li{list-style:none;display:grid;grid-template-columns:64px 1fr;gap:4px 12px;padding:24px 0;border-bottom:1px solid var(--line)}
+.diff .n{font-family:var(--display);font-size:44px;line-height:.9;color:var(--amber)}
+.diff h3{margin-bottom:8px}
+.diff p{margin:0;color:var(--muted)}
+.diff ul,.diff{padding:0;margin-left:0;margin-right:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chips b{font-family:var(--display);font-weight:400;font-size:30px;line-height:1;border:2px solid var(--fg);padding:8px 14px 6px}
+.diff-cta{margin-top:36px}
+@media(min-width:860px){.diff{grid-template-columns:1fr 1fr;column-gap:56px}.diff li{grid-template-columns:72px 1fr}}
+
+/* fits */
+.fits{display:grid;gap:16px;margin-top:32px}
+.fit{background:var(--bg2);border:1px solid var(--line);display:flex;flex-direction:column}
+.fit .ph{border:0;border-bottom:2px dashed #5A5A53}
+.fit-body{padding:20px 20px 24px;display:flex;flex-direction:column;gap:8px;flex:1}
+.fit-body p{margin:0 0 12px;color:var(--muted);flex:1}
+@media(min-width:760px){.fits{grid-template-columns:repeat(3,1fr)}}
+
+/* founder */
+.founder{display:grid;gap:32px}
+blockquote{margin:0;font-size:clamp(22px,5vw,30px);line-height:1.3;font-weight:600}
+.sig{margin-top:18px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;font-size:14px;color:var(--amber)}
+@media(min-width:860px){.founder{grid-template-columns:.8fr 1.2fr;align-items:center;gap:64px}}
+
+/* form */
+.form-box{background:var(--bg2);border:2px solid var(--fg);padding:clamp(20px,5vw,40px);margin-top:28px;max-width:760px}
+.grid2{display:grid;gap:18px}
+@media(min-width:640px){.grid2{grid-template-columns:1fr 1fr}}
+.field{margin-bottom:18px;min-width:0}
+.grid2 .field{margin-bottom:0}
+.grid2{margin-bottom:18px}
+label,legend{display:block;font-weight:600;font-size:15px;margin-bottom:6px;padding:0}
+.req{color:var(--amber)}
+.opt{color:var(--muted);font-weight:400}
+input[type=text],input[type=tel],input[type=email],select,textarea{width:100%;min-height:48px;padding:10px 14px;background:var(--bg);color:var(--fg);border:2px solid var(--line);border-radius:0;font:400 16px var(--body);-webkit-appearance:none;appearance:none}
+textarea{min-height:96px;resize:vertical}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1 1l6 6 6-6' fill='none' stroke='%23F4F1EA' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:40px}
+input:focus,select:focus,textarea:focus{outline:3px solid var(--amber);outline-offset:0;border-color:var(--amber)}
+[aria-invalid=true]{border-color:var(--err)!important}
+.err{color:var(--err);font-size:14px;font-weight:600;margin:6px 0 0}
+.err[hidden]{display:none}
+.phone{display:flex}
+.phone .prefix{display:flex;align-items:center;padding:0 14px;background:var(--bg);border:2px solid var(--line);border-right:0;font-weight:600;color:var(--muted)}
+.phone input{flex:1;min-width:0}
+fieldset{border:0;margin:0 0 18px;padding:0;min-width:0}
+.chip-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.chip{position:relative}
+.chip input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+.chip label{display:flex;align-items:center;justify-content:center;min-height:48px;margin:0;border:2px solid var(--line);background:var(--bg);font-weight:800;text-transform:uppercase;letter-spacing:.05em;font-size:14px}
+.chip input:checked+label{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.chip input:focus-visible+label{outline:3px solid var(--amber);outline-offset:2px}
+fieldset[aria-invalid=true] .chip label{border-color:var(--err)}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.submit-note{margin:10px 0 0;color:var(--muted);font-size:14px;text-align:center}
+.alt{margin-top:22px;padding-top:20px;border-top:1px solid var(--line);text-align:center}
+.alt p{margin:0 0 4px;color:var(--muted);font-size:14px}
+.thanks{background:var(--bg2);border:2px solid var(--amber);padding:clamp(24px,6vw,48px);margin-top:28px;max-width:760px}
+.thanks[hidden],.form-box[hidden]{display:none}
+.thanks h3{font-size:clamp(34px,8vw,56px);margin-bottom:14px}
+.thanks p{margin:0 0 22px;font-size:18px}
+
+/* steps */
+.steps{display:grid;gap:16px;margin:32px 0;padding:0;counter-reset:s}
+.steps li{list-style:none;border:1px solid var(--line);background:var(--bg2);padding:24px;counter-increment:s}
+.steps li::before{content:counter(s,decimal-leading-zero);font-family:var(--display);font-size:52px;line-height:1;color:var(--amber);display:block;margin-bottom:10px}
+.steps p{margin:8px 0 0;color:var(--muted)}
+.promise{border:2px solid var(--amber);padding:20px 22px;font-size:clamp(18px,4.4vw,22px);font-weight:600;margin:0 0 32px}
+@media(min-width:760px){.steps{grid-template-columns:repeat(3,1fr)}}
+
+/* faq */
+details{border-bottom:1px solid var(--line)}
+details:first-of-type{border-top:1px solid var(--line)}
+summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;min-height:64px;padding:14px 0;font-weight:800;font-size:clamp(17px,4.4vw,20px);line-height:1.3}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-family:var(--display);font-size:34px;line-height:1;color:var(--amber);flex:none}
+details[open] summary::after{content:"–"}
+details p{margin:0 0 22px;color:var(--muted);max-width:44em}
+.faq{max-width:820px;margin-top:28px}
+
+/* footer */
+footer{border-top:1px solid var(--line);padding:48px 0 56px}
+.foot{display:grid;gap:28px}
+.foot .brand{font-size:34px}
+.foot ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.foot a{display:inline-flex;align-items:center;min-height:44px;text-decoration:none;border-bottom:1px solid transparent}
+.foot a:hover{color:var(--amber)}
+.legal{margin-top:12px;color:var(--muted);font-size:13px}
+@media(min-width:760px){.foot{grid-template-columns:1.2fr 1fr 1fr}}
+
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.ticker-track{animation:none}}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="#top">[BRAND NAME]</a>
+    <a class="btn btn-sm" href="#reserve" data-cta="topbar">Reserve ₹500</a>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- 2. HERO -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <p class="eyebrow">For men 6'0" and up</p>
+      <h1>Your ankles called. <em>They want coverage.</em></h1>
+      <p class="lede">Jeans re-cut for tall frames. Longer rise, lower knee, 34" to 38" inseams.</p>
+      <a class="btn" href="#reserve" data-cta="hero">Reserve your pair for ₹500</a>
+      <p class="cta-note">Fully refundable. Early price ₹2,499 (₹2,999 after launch).</p>
+    </div>
+    <div class="ph r45" role="img" aria-label="Photo placeholder: tall guy in [BRAND NAME] jeans, full length, ankles covered">PHOTO: tall guy, full length, [BRAND NAME] jeans, clean hem over the shoe</div>
+  </div>
+</section>
+
+<!-- 3. TICKER -->
+<div class="ticker" aria-hidden="true">
+  <div class="ticker-track">
+    <div>
+      <span>Not baggy. Not short. Built tall.</span><span>Not baggy. Not short. Built tall.</span><span>Not baggy. Not short. Built tall.</span><span>Not baggy. Not short. Built tall.</span><span>Not baggy. Not short. Built tall.</span><span>Not baggy. Not short. Built tall.</span>
+    </div>
+    <div>
+      <span>Not baggy. Not short. Built tall.</span><span>Not baggy. Not short. Built tall.</span><span>Not baggy. Not short. Built tall.</span><span>Not baggy. Not short. Built tall.</span><span>Not baggy. Not short. Built tall.</span><span>Not baggy. Not short. Built tall.</span>
+    </div>
+  </div>
+</div>
+
+<!-- 4. PROBLEM -->
+<section class="sec" id="problem">
+  <div class="wrap">
+    <p class="eyebrow">The problem</p>
+    <h2>Being tall shouldn't be <em>a fitting problem.</em></h2>
+    <div class="cards">
+      <article class="card">
+        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square" aria-hidden="true">
+          <path d="M18 2v32h24V2"/><path d="M23 34v14M37 34v14"/><path d="M17 48h25a7 7 0 0 1 7 7v5H17z"/>
+          <path stroke="#EF9F27" d="M54 34v14M49 34h10M49 48h10"/>
+        </svg>
+        <h3>Hem stops above the ankle</h3>
+        <p>Standard 32" inseam. You're 6'3". Sit down, stand up, ankle's out. Every photo, every time.</p>
+      </article>
+      <article class="card">
+        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square" aria-hidden="true">
+          <path d="M16 2h32l10 58H6z"/>
+          <path stroke="#EF9F27" d="M12 32h40M18 26l-6 6 6 6M46 26l6 6-6 6"/>
+        </svg>
+        <h3>"Long" just means baggy</h3>
+        <p>Brands add length by making everything bigger. You wanted taller, not wider.</p>
+      </article>
+      <article class="card">
+        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square" aria-hidden="true">
+          <path d="M6 12l9 9 16-18"/>
+          <path stroke="#EF9F27" d="M6 40l22 20M28 40L6 60"/>
+          <path d="M46 2h14v60H46zM46 12h7M46 22h7M46 32h7M46 42h7M46 52h7"/>
+        </svg>
+        <h3>Waist fits. Length doesn't.</h3>
+        <p>30 waist, 36 legs. Nobody makes it, so you pick one and lose the other.</p>
+      </article>
+    </div>
+    <div class="ba">
+      <figure>
+        <div class="ph r34" role="img" aria-label="Photo placeholder: before, regular jeans with ankle gap">PHOTO: BEFORE. Regular jeans, ankle gap</div>
+        <figcaption>Before</figcaption>
+      </figure>
+      <figure>
+        <div class="ph r34" role="img" aria-label="Photo placeholder: after, same guy in [BRAND NAME] jeans">PHOTO: AFTER. Same guy, [BRAND NAME], hem on the shoe</div>
+        <figcaption><em>After</em></figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- 5. WHAT'S DIFFERENT -->
+<section class="sec" id="different">
+  <div class="wrap">
+    <p class="eyebrow">What's different</p>
+    <h2>Re-proportioned. <em>Not just stretched.</em></h2>
+    <p class="lede">Most "long" jeans are regular jeans with extra leg stuck on. We changed the pattern instead.</p>
+    <ol class="diff">
+      <li>
+        <span class="n">01</span>
+        <div><h3>Longer back rise</h3><p>The waistband stays where you put it when you sit down. No mid-meeting hoist.</p></div>
+      </li>
+      <li>
+        <span class="n">02</span>
+        <div><h3>Knee moved lower</h3><p>The taper starts where your knee actually is, not halfway down your shin.</p></div>
+      </li>
+      <li>
+        <span class="n">03</span>
+        <div><h3>Three real inseams</h3><p>Pick the length that lands on your shoe.</p>
+          <div class="chips" aria-label="Inseam options"><b>34"</b><b>36"</b><b>38"</b></div></div>
+      </li>
+      <li>
+        <span class="n">04</span>
+        <div><h3>Slim waist, long legs</h3><p>30 waist with a 36 inseam. Yes, that exists now.</p></div>
+      </li>
+      <li>
+        <span class="n">05</span>
+        <div><h3>Lighter stretch denim</h3><p>Made for Indian weather. Moves with you, doesn't cook you.</p></div>
+      </li>
+    </ol>
+    <div class="diff-cta"><a class="btn" href="#reserve" data-cta="difference">Reserve your pair for ₹500</a></div>
+  </div>
+</section>
+
+<!-- 6. FITS -->
+<section class="sec" id="fits">
+  <div class="wrap">
+    <p class="eyebrow">The fits</p>
+    <h2>Three fits. <em>Vote with your deposit.</em></h2>
+    <p class="lede">Tell us which one you'd actually wear. The most-picked fit gets cut first.</p>
+    <div class="fits">
+      <article class="fit">
+        <div class="ph r34" role="img" aria-label="Photo placeholder: slim fit">PHOTO: Slim fit, side and front</div>
+        <div class="fit-body">
+          <h3>Slim</h3>
+          <p>Close, clean line from hip to hem. Sharp without the squeeze.</p>
+          <a class="btn btn-block" href="#reserve" data-fit="Slim">Pick this fit</a>
+        </div>
+      </article>
+      <article class="fit">
+        <div class="ph r34" role="img" aria-label="Photo placeholder: straight fit">PHOTO: Straight fit, side and front</div>
+        <div class="fit-body">
+          <h3>Straight</h3>
+          <p>Classic and easy. Same width top to bottom, just actually long enough.</p>
+          <a class="btn btn-block" href="#reserve" data-fit="Straight">Pick this fit</a>
+        </div>
+      </article>
+      <article class="fit">
+        <div class="ph r34" role="img" aria-label="Photo placeholder: tapered fit">PHOTO: Tapered fit, side and front</div>
+        <div class="fit-body">
+          <h3>Tapered</h3>
+          <p>Room up top, sharp hem. The taper starts at your knee, not your shin.</p>
+          <a class="btn btn-block" href="#reserve" data-fit="Tapered">Pick this fit</a>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- 7. FOUNDER -->
+<section class="sec" id="founder">
+  <div class="wrap founder">
+    <div class="ph r45" role="img" aria-label="Photo placeholder: tall co-founder">PHOTO: co-founder, standing, in the jeans</div>
+    <div>
+      <p class="eyebrow">Why we're doing this</p>
+      <blockquote>
+        "I'm [FOUNDER NAME], [FOUNDER HEIGHT]. I spent years buying jeans that stopped at the ankle, or 'long' ones that fit like a tent. So we're making the pair we couldn't find. [ONE LINE ON WHY YOU STARTED]."
+      </blockquote>
+      <p class="sig">[FOUNDER NAME], co-founder</p>
+    </div>
+  </div>
+</section>
+
+<!-- 8. FORM -->
+<section class="sec" id="reserve">
+  <div class="wrap">
+    <p class="eyebrow">Reserve</p>
+    <h2>Find your <em>fit.</em></h2>
+    <p class="lede">Sixty seconds. We use this to cut batch one in the right sizes. The ₹500 is fully refundable before shipping.</p>
+
+    <form class="form-box" id="reserve-form" novalidate>
+      <div class="field">
+        <label for="name">Name <span class="req" aria-hidden="true">*</span></label>
+        <input type="text" id="name" name="name" autocomplete="name" aria-required="true" aria-describedby="name-err">
+        <p class="err" id="name-err" hidden></p>
+      </div>
+
+      <div class="field">
+        <label for="phone">WhatsApp number <span class="req" aria-hidden="true">*</span></label>
+        <div class="phone">
+          <span class="prefix" aria-hidden="true">+91</span>
+          <input type="tel" id="phone" name="phone" inputmode="numeric" autocomplete="tel-national" maxlength="16" placeholder="98765 43210" aria-required="true" aria-describedby="phone-err">
+        </div>
+        <p class="err" id="phone-err" hidden></p>
+      </div>
+
+      <div class="field">
+        <label for="email">Email <span class="opt">(optional)</span></label>
+        <input type="email" id="email" name="email" autocomplete="email" inputmode="email" aria-describedby="email-err">
+        <p class="err" id="email-err" hidden></p>
+      </div>
+
+      <div class="field">
+        <label for="city">City <span class="req" aria-hidden="true">*</span></label>
+        <input type="text" id="city" name="city" autocomplete="address-level2" aria-required="true" aria-describedby="city-err">
+        <p class="err" id="city-err" hidden></p>
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label for="height">Height <span class="req" aria-hidden="true">*</span></label>
+          <select id="height" name="height" aria-required="true" aria-describedby="height-err">
+            <option value="">Select</option>
+            <option value="5'11&quot; or under">5'11" or under</option>
+            <option value="6'0&quot;">6'0"</option><option value="6'1&quot;">6'1"</option><option value="6'2&quot;">6'2"</option><option value="6'3&quot;">6'3"</option><option value="6'4&quot;">6'4"</option><option value="6'5&quot;">6'5"</option><option value="6'6&quot;">6'6"</option><option value="6'7&quot;">6'7"</option><option value="6'8&quot;">6'8"</option>
+          </select>
+          <p class="err" id="height-err" hidden></p>
+        </div>
+        <div class="field">
+          <label for="waist">Waist <span class="req" aria-hidden="true">*</span></label>
+          <select id="waist" name="waist" aria-required="true" aria-describedby="waist-err">
+            <option value="">Select</option>
+            <option>28</option><option>29</option><option>30</option><option>31</option><option>32</option><option>33</option><option>34</option><option>35</option><option>36</option><option>37</option><option>38</option><option>39</option><option>40</option>
+          </select>
+          <p class="err" id="waist-err" hidden></p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="inseam">Current inseam, if you know it</label>
+        <select id="inseam" name="inseam">
+          <option value="32&quot;">32"</option><option value="33&quot;">33"</option><option value="34&quot;">34"</option><option value="35&quot;">35"</option><option value="36&quot;">36"</option><option value="37&quot;">37"</option><option value="38&quot;">38"</option>
+          <option value="Not sure" selected>Not sure</option>
+        </select>
+      </div>
+
+      <fieldset id="fit-set" aria-describedby="fit-err">
+        <legend>Preferred fit <span class="req" aria-hidden="true">*</span></legend>
+        <div class="chip-row">
+          <div class="chip"><input type="radio" name="fit" id="fit-slim" value="Slim"><label for="fit-slim">Slim</label></div>
+          <div class="chip"><input type="radio" name="fit" id="fit-straight" value="Straight"><label for="fit-straight">Straight</label></div>
+          <div class="chip"><input type="radio" name="fit" id="fit-tapered" value="Tapered"><label for="fit-tapered">Tapered</label></div>
+        </div>
+        <p class="err" id="fit-err" hidden></p>
+      </fieldset>
+
+      <div class="field">
+        <label for="problem">What's your biggest problem with jeans today? <span class="opt">(optional)</span></label>
+        <textarea id="problem" name="problem" maxlength="500" rows="3"></textarea>
+      </div>
+
+      <div class="hp" aria-hidden="true"><label>Leave this empty<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+
+      <button type="submit" class="btn btn-block" id="pay-btn" data-mode="deposit">Pay ₹500 and lock it in</button>
+      <p class="submit-note">₹500 · fully refundable any time before shipping</p>
+
+      <div class="alt">
+        <p>Not ready to pay?</p>
+        <button type="submit" class="linkbtn" id="wait-btn" data-mode="waitlist">Join the waitlist</button>
+      </div>
+      <noscript><p class="err">This form needs JavaScript. Please enable it, or message us on WhatsApp at [WHATSAPP NUMBER].</p></noscript>
+    </form>
+
+    <div class="thanks" id="thanks" hidden tabindex="-1" aria-live="polite">
+      <h3 id="thanks-title">You're in.</h3>
+      <p id="thanks-text"></p>
+      <a class="btn" id="wa-group" href="#" target="_blank" rel="noopener" data-cta="whatsapp-community">Join the WhatsApp community</a>
+    </div>
+  </div>
+</section>
+
+<!-- 9. HOW THE DEPOSIT WORKS -->
+<section class="sec" id="how">
+  <div class="wrap">
+    <p class="eyebrow">How the deposit works</p>
+    <h2>Three steps. <em>No catch.</em></h2>
+    <ol class="steps">
+      <li><h3>Reserve with ₹500</h3><p>Fill the form, pay the deposit. Your pair is held from batch one.</p></li>
+      <li><h3>We confirm your size</h3><p>We message you on WhatsApp to double-check waist and inseam before we cut anything.</p></li>
+      <li><h3>Pay the balance on shipping</h3><p>Pay the rest when your pair ships in [DELIVERY WEEKS] weeks.</p></li>
+    </ol>
+    <p class="promise">The ₹500 is fully refundable any time before your pair ships. Change your mind, message us, get it back.</p>
+    <a class="btn" href="#reserve" data-cta="steps">Reserve your pair for ₹500</a>
+  </div>
+</section>
+
+<!-- 10. FAQ -->
+<section class="sec" id="faq">
+  <div class="wrap">
+    <p class="eyebrow">Questions</p>
+    <h2>Fair <em>questions.</em></h2>
+    <div class="faq">
+      <details>
+        <summary>Is the deposit refundable?</summary>
+        <p>Yes, fully. Any time before your pair ships, message us on WhatsApp or email and we'll refund the ₹500 to the account you paid from. Full details on the <a href="refund.html">Refund Policy</a>.</p>
+      </details>
+      <details>
+        <summary>When will I get my jeans?</summary>
+        <p>Batch one ships in about [DELIVERY WEEKS] weeks. We'll message you on WhatsApp the moment your pair is on its way, and again if anything changes.</p>
+      </details>
+      <details>
+        <summary>What if they don't fit?</summary>
+        <p>We confirm your size with you on WhatsApp before we cut your pair, so it shouldn't come to that. If it still doesn't fit when it arrives: [FIT GUARANTEE, e.g. free exchange or refund].</p>
+      </details>
+      <details>
+        <summary>Do you ship all over India?</summary>
+        <p>Yes, pan-India. Shipping is [SHIPPING TERMS].</p>
+      </details>
+      <details>
+        <summary>I'm 5'11" with long legs. Is this for me?</summary>
+        <p>Maybe, and it's the inseam that decides it, not the height. If 32" jeans leave your ankles out, you're in. Pick "5'11" or under" in the form, add your inseam, or choose "Not sure" and we'll sort it out with you on WhatsApp.</p>
+      </details>
+      <details>
+        <summary>Why not just buy "long" jeans from big brands?</summary>
+        <p>Because "long" usually means a regular pattern with extra length, so you get a baggy fit and a rise that still drags down when you sit. We re-cut the rise and move the knee so the proportions work on tall frames.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- 11. FOOTER -->
+<footer>
+  <div class="wrap foot">
+    <div>
+      <a class="brand" href="#top">[BRAND NAME]</a>
+      <p class="muted small" style="margin:8px 0 0">Not baggy. Not short. Built tall.</p>
+    </div>
+    <ul>
+      <li><a href="https://instagram.com/[INSTAGRAM HANDLE]" rel="noopener">Instagram: [INSTAGRAM HANDLE]</a></li>
+      <li><a href="https://wa.me/[WHATSAPP NUMBER]" rel="noopener">WhatsApp: [WHATSAPP NUMBER]</a></li>
+      <li><a href="mailto:[EMAIL]">[EMAIL]</a></li>
+    </ul>
+    <ul>
+      <li><a href="privacy.html">Privacy Policy</a></li>
+      <li><a href="refund.html">Refund Policy</a></li>
+    </ul>
+  </div>
+  <div class="wrap"><p class="legal">© 2026 [BRAND NAME]. All rights reserved.</p></div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ------------------------------------------------------------------
+     CONFIG: replace every [PLACEHOLDER]. Anything still in [brackets]
+     is treated as "not set" and skipped, so the page works while you
+     wire things up (events are logged to the browser console).
+  ------------------------------------------------------------------ */
+  var CONFIG = {
+    SHEET_ENDPOINT: '[GOOGLE APPS SCRIPT WEB APP URL]', // see apps-script/Code.gs
+    PAYMENT_LINK: '[PAYMENT LINK]',                      // Razorpay / UPI payment link
+    WHATSAPP_GROUP_LINK: '[WHATSAPP GROUP LINK]',
+    DEPOSIT_INR: 500,
+
+    GOOGLE_ADS_ID: '[GOOGLE ADS ID]',                    // e.g. AW-123456789
+    GOOGLE_ADS_LABELS: {                                 // conversion labels, one per event
+      cta_click: '[CTA CLICK CONVERSION LABEL]',
+      form_start: '[FORM START CONVERSION LABEL]',
+      form_submit: '[FORM SUBMIT CONVERSION LABEL]',
+      deposit_click: '[DEPOSIT CLICK CONVERSION LABEL]'
+    },
+    META_PIXEL_ID: '[META PIXEL ID]'
+  };
+
+  var isSet = function (v) { return !!v && !/^\[.*\]$/.test(v); };
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+
+  /* ---------- Tracking tags (loaded after page load: keeps first paint fast) ---------- */
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+  var adsOn = isSet(CONFIG.GOOGLE_ADS_ID), pixelOn = isSet(CONFIG.META_PIXEL_ID);
+
+  if (pixelOn) { /* Meta Pixel base code */
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', CONFIG.META_PIXEL_ID);
+    fbq('track', 'PageView');
+  }
+  if (adsOn) { gtag('js', new Date()); gtag('config', CONFIG.GOOGLE_ADS_ID); }
+  window.addEventListener('load', function () {
+    if (adsOn) { var s = document.createElement('script'); s.async = true; s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(CONFIG.GOOGLE_ADS_ID); document.head.appendChild(s); }
+  });
+
+  var META_MAP = { // event -> [method, name]
+    cta_click: ['trackCustom', 'CTAClick'],
+    fit_pick: ['trackCustom', 'FitPick'],
+    form_start: ['trackCustom', 'FormStart'],
+    form_submit: ['track', 'Lead'],
+    deposit_click: ['track', 'InitiateCheckout'],
+    deposit_paid: ['track', 'Purchase']
+  };
+  function track(name, params) {
+    params = params || {};
+    try { console.debug('[track]', name, params); } catch (e) {}
+    if (adsOn) {
+      gtag('event', name, params);
+      var label = CONFIG.GOOGLE_ADS_LABELS[name];
+      if (isSet(label)) gtag('event', 'conversion', { send_to: CONFIG.GOOGLE_ADS_ID + '/' + label });
+    }
+    if (pixelOn && META_MAP[name]) {
+      var p = params;
+      if (name === 'deposit_click' || name === 'deposit_paid') p = Object.assign({ value: CONFIG.DEPOSIT_INR, currency: 'INR' }, params);
+      fbq(META_MAP[name][0], META_MAP[name][1], p);
+    }
+  }
+
+  /* ---------- Attribution: UTMs, click ids, referrer (kept across visits) ---------- */
+  var ATTR_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'fbclid'];
+  var attribution = (function () {
+    var q = new URLSearchParams(location.search), fresh = {}, found = false, stored = {};
+    ATTR_KEYS.forEach(function (k) { if (q.get(k)) { fresh[k] = q.get(k); found = true; } });
+    try { stored = JSON.parse(localStorage.getItem('attr') || '{}'); } catch (e) {}
+    var a = found ? fresh : stored;
+    if (!a.referrer) a.referrer = document.referrer || '';
+    try { localStorage.setItem('attr', JSON.stringify(a)); } catch (e) {}
+    return a;
+  })();
+
+  /* ---------- Save to Google Sheet via Apps Script ---------- */
+  function post(payload, wait) {
+    if (!isSet(CONFIG.SHEET_ENDPOINT)) { console.info('[sheet] SHEET_ENDPOINT not set. Would send:', payload); return Promise.resolve(); }
+    var req = fetch(CONFIG.SHEET_ENDPOINT, { method: 'POST', mode: 'no-cors', keepalive: true, body: JSON.stringify(payload) }).catch(function () {});
+    return wait ? Promise.race([req, new Promise(function (r) { setTimeout(r, 4000); })]) : Promise.resolve();
+  }
+  var uid = function () { return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2); };
+  var submissionId = uid();
+
+  /* ---------- CTA clicks + fit picks ---------- */
+  document.addEventListener('click', function (e) {
+    var fitBtn = e.target.closest('[data-fit]');
+    if (fitBtn) {
+      var fit = fitBtn.getAttribute('data-fit');
+      var radio = document.querySelector('input[name=fit][value="' + fit + '"]');
+      if (radio) { radio.checked = true; clearErr('fit'); }
+      track('fit_pick', { fit: fit });
+      post(Object.assign({ type: 'event', event: 'fit_pick', fit: fit, landing_url: location.href.split('#')[0] }, attribution), false);
+      return;
+    }
+    var cta = e.target.closest('[data-cta]');
+    if (cta) track('cta_click', { location: cta.getAttribute('data-cta') });
+  });
+
+  /* ---------- Form ---------- */
+  var form = $('#reserve-form'), mode = 'deposit', submitting = false, started = false;
+  var FIELDS = ['name', 'phone', 'email', 'city', 'height', 'waist', 'fit'];
+
+  function normPhone(v) {
+    var d = String(v).replace(/\D/g, '');
+    if (d.length === 12 && d.indexOf('91') === 0) d = d.slice(2);
+    else if (d.length === 11 && d.charAt(0) === '0') d = d.slice(1);
+    return /^[6-9]\d{9}$/.test(d) ? d : '';
+  }
+  var RULES = {
+    name: function (v) { return v.trim().length >= 2 ? '' : 'Tell us your name.'; },
+    phone: function (v) { return normPhone(v) ? '' : 'Enter a valid 10-digit Indian mobile number.'; },
+    email: function (v) { v = v.trim(); return !v || /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v) ? '' : 'That email looks off. Fix it or leave it blank.'; },
+    city: function (v) { return v.trim().length >= 2 ? '' : 'Which city are you in?'; },
+    height: function (v) { return v ? '' : 'Pick your height.'; },
+    waist: function (v) { return v ? '' : 'Pick your waist size.'; },
+    fit: function (v) { return v ? '' : 'Pick a fit. It counts as your vote.'; }
+  };
+  function fieldEl(n) { return n === 'fit' ? $('#fit-set') : form.elements[n]; }
+  function showErr(n, msg) {
+    var p = $('#' + n + '-err'), el = fieldEl(n);
+    p.textContent = msg; p.hidden = !msg;
+    if (msg) el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid');
+  }
+  function clearErr(n) { showErr(n, ''); }
+  function value(n) { return n === 'fit' ? (form.elements.fit.value || '') : form.elements[n].value; }
+  function validate() {
+    var firstBad = null;
+    FIELDS.forEach(function (n) {
+      var msg = RULES[n](value(n));
+      showErr(n, msg);
+      if (msg && !firstBad) firstBad = n;
+    });
+    if (firstBad) {
+      var el = firstBad === 'fit' ? $('#fit-slim') : form.elements[firstBad];
+      el.focus({ preventScroll: true });
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    return !firstBad;
+  }
+
+  FIELDS.forEach(function (n) {
+    var el = fieldEl(n), evt = (n === 'fit' || n === 'height' || n === 'waist') ? 'change' : 'input';
+    el.addEventListener(evt, function () { if (!$('#' + n + '-err').hidden) showErr(n, RULES[n](value(n))); });
+  });
+
+  form.addEventListener('focusin', function () {
+    if (started) return; started = true; track('form_start');
+  });
+  form.addEventListener('click', function (e) {
+    var b = e.target.closest('button[type=submit]');
+    if (!b) return;
+    mode = b.getAttribute('data-mode');
+    if (mode === 'deposit') track('deposit_click');
+  });
+
+  function setBusy(on) {
+    $('#pay-btn').disabled = on; $('#wait-btn').disabled = on;
+    $('#pay-btn').textContent = on && mode === 'deposit' ? 'Saving… taking you to payment' : 'Pay ₹500 and lock it in';
+    $('#wait-btn').textContent = on && mode === 'waitlist' ? 'Saving…' : 'Join the waitlist';
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (submitting) return;
+    if (!validate()) return;
+    if (form.elements.website.value) return; // honeypot: bots only
+    submitting = true; setBusy(true);
+
+    var data = Object.assign({
+      type: 'submission',
+      submission_id: submissionId,
+      choice: mode,                               // "deposit" = clicked through to pay, "waitlist" = free sign-up
+      name: form.elements.name.value.trim(),
+      whatsapp: normPhone(form.elements.phone.value),
+      email: form.elements.email.value.trim(),
+      city: form.elements.city.value.trim(),
+      height: form.elements.height.value,
+      waist: form.elements.waist.value,
+      inseam: form.elements.inseam.value,
+      fit: form.elements.fit.value,
+      problem: form.elements.problem.value.trim(),
+      landing_url: location.href.split('#')[0],
+      client_time: new Date().toISOString()
+    }, attribution);
+
+    track('form_submit', { method: mode, fit: data.fit });
+    try { localStorage.setItem('submission_id', submissionId); } catch (err) {}
+
+    post(data, true).then(function () {
+      if (mode === 'deposit' && isSet(CONFIG.PAYMENT_LINK)) { window.location.href = CONFIG.PAYMENT_LINK; return; }
+      if (mode === 'deposit') console.warn('PAYMENT_LINK not set: showing the thank-you screen instead of redirecting.');
+      showThanks(mode === 'deposit' ? 'pending' : 'waitlist');
+      submitting = false; setBusy(false);
+    });
+  });
+
+  // Back button from the payment page (bfcache) should not leave the form stuck.
+  window.addEventListener('pageshow', function (e) { if (e.persisted) { submitting = false; setBusy(false); } });
+
+  /* ---------- Thank-you ---------- */
+  function showThanks(kind) {
+    var t = {
+      waitlist: ["You're on the list.", "We'll message you on WhatsApp when batch one opens. Join the community to see fit pics and drop dates first."],
+      paid: ['Deposit received. Your pair is locked.', "We'll message you on WhatsApp to confirm your size. Join the community to follow the batch."],
+      pending: ["You're in.", "Your details are saved. We'll message you on WhatsApp to confirm your size. Join the community to follow the batch."]
+    }[kind];
+    $('#thanks-title').textContent = t[0];
+    $('#thanks-text').textContent = t[1];
+    var wa = $('#wa-group');
+    if (isSet(CONFIG.WHATSAPP_GROUP_LINK)) wa.href = CONFIG.WHATSAPP_GROUP_LINK;
+    form.hidden = true;
+    var box = $('#thanks'); box.hidden = false;
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    box.focus({ preventScroll: true });
+  }
+
+  // Set the payment link's callback URL to https://[DOMAIN]/?paid=1 so people land back on the thank-you screen.
+  var qs = new URLSearchParams(location.search);
+  if (qs.get('paid') === '1' || qs.get('razorpay_payment_link_status') === 'paid') {
+    showThanks('paid');
+    var sid = ''; try { sid = localStorage.getItem('submission_id') || ''; } catch (e) {}
+    try { if (sessionStorage.getItem('paid_tracked')) return; sessionStorage.setItem('paid_tracked', '1'); } catch (e) {}
+    track('deposit_paid', {});
+    post(Object.assign({ type: 'event', event: 'deposit_paid', submission_id: sid, landing_url: location.href.split('#')[0] }, attribution), false);
+  }
+})();
+</script>
+</body>
+</html>
